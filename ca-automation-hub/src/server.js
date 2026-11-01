@@ -329,6 +329,30 @@ app.post('/api/settings', checkAuth, async (req, res) => {
 });
 
 // Public / Client API Routes (No Auth for portal access & submissions)
+app.get('/api/clients/:id/workspace', checkAuth, requireTenantAuth, async (req, res) => {
+  try {
+    const clients = await readClientsForCa(req.caId);
+    const client = clients.find(entry => entry.id === req.params.id);
+    if (!client) return res.status(404).json({ error: 'Client not found.' });
+    res.json({
+      id: client.id,
+      name: client.name,
+      businessName: client.businessName,
+      email: client.email,
+      phone: client.phone,
+      gstin: client.gstin,
+      documentChecklist: (client.documentChecklist || []).map(item => ({
+        id: item.id,
+        title: item.title || item.label || item.id,
+        submitted: Boolean(item.submitted),
+        hasUpload: Boolean(item.storedAs)
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read client details.' });
+  }
+});
+
 app.get('/api/clients/:id', async (req, res) => {
   try {
     const clients = await getClients();
@@ -370,7 +394,34 @@ app.put('/api/clients/:id/checklist', checkAuth, requireTenantAuth, async (req, 
     const clients = await readClientsForCa(req.caId);
     const index = clients.findIndex(c => c.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Client not found' });
-    clients[index].documentChecklist = req.body.documentChecklist;
+    const requestedChecklist = req.body.documentChecklist;
+    if (!Array.isArray(requestedChecklist) || requestedChecklist.length < 1 || requestedChecklist.length > 20) {
+      return res.status(400).json({ error: 'A checklist must contain between 1 and 20 items.' });
+    }
+
+    const client = clients[index];
+    const currentItems = client.documentChecklist || [];
+    const currentById = new Map(currentItems.map(item => [item.id, item]));
+    const requestedIds = new Set();
+    const updatedItems = [];
+    for (const requestedItem of requestedChecklist) {
+      const requestedId = typeof requestedItem.id === 'string' ? requestedItem.id : '';
+      const title = typeof requestedItem.title === 'string' ? requestedItem.title.trim() : '';
+      if (!title || title.length > 100) return res.status(400).json({ error: 'Each checklist item needs a title of 1–100 characters.' });
+      if (requestedId && requestedIds.has(requestedId)) return res.status(400).json({ error: 'Checklist item IDs must be unique.' });
+      if (requestedId) requestedIds.add(requestedId);
+
+      const existing = currentById.get(requestedId);
+      updatedItems.push(existing
+        ? { ...existing, title }
+        : { id: `document-${crypto.randomUUID()}`, title, submitted: false });
+    }
+    const removedUploadedItem = currentItems.some(item => item.storedAs && !requestedIds.has(item.id));
+    if (removedUploadedItem) return res.status(400).json({ error: 'Uploaded checklist items cannot be removed.' });
+
+    client.documentChecklist = updatedItems;
+    const submittedCount = updatedItems.filter(item => item.submitted).length;
+    client.status = submittedCount === updatedItems.length ? 'Completed' : submittedCount ? 'Partially Submitted' : 'Pending';
     await writeClientsForCa(req.caId, clients);
     await logActivity({
       caId: req.caId,
@@ -380,7 +431,15 @@ app.put('/api/clients/:id/checklist', checkAuth, requireTenantAuth, async (req, 
       clientName: clients[index].businessName,
       details: 'Client document checklist updated.'
     });
-    res.json({ success: true, client: clients[index] });
+    res.json({
+      success: true,
+      documentChecklist: client.documentChecklist.map(item => ({
+        id: item.id,
+        title: item.title,
+        submitted: Boolean(item.submitted),
+        hasUpload: Boolean(item.storedAs)
+      }))
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update client checklist' });
   }

@@ -36,6 +36,7 @@
         .toast{position:fixed;bottom:22px;right:22px;z-index:5;background:#163b5a;color:white;padding:12px 16px;border-radius:8px;box-shadow:0 8px 28px #18344e2a;font-size:10px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:translateY(0)}
         .heading-actions{display:flex;gap:8px;flex-wrap:wrap}dialog{width:min(100% - 28px,520px);padding:0;border:1px solid #dfe7ed;border-radius:13px;box-shadow:0 25px 90px #102b4644;color:#24394c}dialog::backdrop{background:#102b4666;backdrop-filter:blur(2px)}.dialog-head{display:flex;justify-content:space-between;align-items:center;padding:18px 21px;border-bottom:1px solid #edf1f4}.dialog-head h2{font-family:Georgia,serif;font-weight:500;color:#18344e;margin:0;font-size:19px}.dialog-close{border:0;background:none;color:#738596;font-size:20px}.dialog-body{padding:17px 21px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.field-row.full{grid-column:1/-1}.dialog-error{font-size:9px;color:#a44d43;min-height:14px;margin:2px 0 8px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:9px}
         [hidden]{display:none!important}.access-restricted{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f7fa}.access-card{width:min(100%,420px);padding:30px;background:#fff;border:1px solid #e1e8ed;border-radius:10px;text-align:center;box-shadow:0 12px 40px #18344e12}.access-card h1{margin:0;color:#142e47;font:500 27px Georgia,serif}.access-card p{margin:10px 0 20px;color:#718293;font-size:13px;line-height:1.6}.access-card .button{font-size:12px;padding:11px 16px}.access-message{min-height:20px;color:#9a5145;font-size:11px;margin:0 0 12px}
+        .client-open{display:block;border:0;padding:0;background:none;text-align:left;color:#203b54;font-size:10px;font-weight:750}.client-open:hover{text-decoration:underline}.edit-drawer{width:min(100%,480px);height:100dvh;max-height:100dvh;margin:0 0 0 auto;padding:0;border:0;border-left:1px solid #dfe7ed;border-radius:12px 0 0 12px;box-shadow:-18px 0 60px #102b4628}.edit-drawer[open]{display:flex;flex-direction:column}.edit-drawer form{display:flex;min-height:0;flex:1;flex-direction:column}.edit-drawer .dialog-body{overflow:auto;flex:1}.edit-client-summary{padding:14px 0 18px;border-bottom:1px solid #edf1f4;color:#607589;font-size:10px;line-height:1.7}.checklist-editor{display:grid;gap:9px}.checklist-edit-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}.checklist-state{display:flex;align-items:center;gap:5px;color:#61778a;font-size:9px;white-space:nowrap}.checklist-remove{border:0;background:transparent;color:#9a5145;padding:7px;font-size:9px}.checklist-remove:disabled{opacity:.45;cursor:not-allowed}.edit-drawer .dialog-actions{position:sticky;bottom:0;padding:12px 0;background:#fff;border-top:1px solid #edf1f4}
         @media(max-width:900px){.sidebar{width:205px}.main{margin-left:205px}.content{padding:26px 20px}.topbar{padding:0 20px}.metric-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:650px){.sidebar{position:static;width:auto;height:auto;padding:12px 14px}.brand{padding:2px 5px 11px;border:0}.brand-mark{width:32px;height:32px}.nav-label,.side-bottom{display:none}.nav{grid-template-columns:repeat(3,1fr);gap:4px;margin-top:9px}.nav button{justify-content:center;padding:9px 4px;font-size:9px}.nav-icon{display:none}.main{margin:0}.topbar{height:48px;padding:0 15px}.connection{display:none}.content{padding:22px 14px 35px}.page-heading{align-items:flex-start;flex-direction:column;margin-bottom:17px}.page-heading h1{font-size:24px}.metric-grid{gap:8px}.metric{padding:13px}.metric-value{font-size:25px}.panel-header{align-items:flex-start;flex-direction:column}.tools{width:100%;flex-wrap:wrap}.search{flex:1;min-width:150px}.settings-grid{grid-template-columns:1fr}.audit-item{grid-template-columns:90px 1fr}}
     </style>
@@ -119,6 +120,18 @@ Purchase Invoices</textarea></div>
         </div>
     </form>
 </dialog>
+<dialog id="client-edit-dialog" class="edit-drawer" aria-labelledby="client-edit-title">
+    <form id="client-edit-form">
+        <div class="dialog-head"><h2 id="client-edit-title">Edit client checklist</h2><button type="button" class="dialog-close" id="close-client-edit" aria-label="Close">×</button></div>
+        <div class="dialog-body">
+            <div class="edit-client-summary" id="client-edit-summary"></div>
+            <div class="field-row"><label>Requested documents</label><div class="checklist-editor" id="checklist-editor"></div></div>
+            <button type="button" class="button" id="add-checklist-item">Add checklist item</button>
+            <div id="client-edit-error" class="dialog-error" role="alert"></div>
+        </div>
+        <div class="dialog-actions"><button type="button" class="button" id="cancel-client-edit">Cancel</button><button type="submit" class="button button-primary" id="save-client-edit">Save checklist</button></div>
+    </form>
+</dialog>
 <div id="toast" class="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -172,6 +185,7 @@ Purchase Invoices</textarea></div>
         });
         document.getElementById('statutory-calendar-list').replaceChildren();
         if (clientDialog?.open) clientDialog.close();
+        if (clientEditDialog?.open) clientEditDialog.close();
     }
 
     function showWorkspace() {
@@ -279,7 +293,7 @@ Purchase Invoices</textarea></div>
             const portal = `/upload/${encodeURIComponent(client.uploadToken)}`;
             const submittedItem = checklist.find(item => item.submitted && item.storedAs);
             return `<tr>
-                <td><div class="client-name">${escapeHtml(client.name || 'Client')}</div><div class="client-meta">${escapeHtml(client.email || 'Contact details not provided')}</div></td>
+                <td><button class="client-open" type="button" data-open-client="${escapeHtml(client.id)}">${escapeHtml(client.name || 'Client')}</button><div class="client-meta">${escapeHtml(client.email || 'Contact details not provided')}</div></td>
                 <td><div class="client-name">${escapeHtml(client.businessName || '—')}</div><div class="client-meta gstin">${escapeHtml(client.gstin || 'GSTIN not provided')}</div></td>
                 <td><div class="doc-progress"><div class="progress-copy">${received} of ${checklist.length} documents received</div><div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div></div></td>
                 <td><span class="status ${statusClass}">${escapeHtml(clientStatus === 'Partially Submitted' ? 'In progress' : clientStatus)}</span></td>
@@ -287,6 +301,39 @@ Purchase Invoices</textarea></div>
             </tr>`;
         }).join('');
     }
+
+    function renderChecklistEditor(items) {
+        const container = document.getElementById('checklist-editor');
+        container.innerHTML = items.map(item => `<div class="checklist-edit-row" data-item-id="${escapeHtml(item.id || '')}" data-has-upload="${Boolean(item.hasUpload)}">
+            <input class="field" data-checklist-title value="${escapeHtml(item.title || '')}" maxlength="100" aria-label="Document name">
+            <label class="checklist-state"><input type="checkbox" ${item.submitted ? 'checked' : ''} disabled>${item.submitted ? 'Received' : 'Required'}</label>
+            <button type="button" class="checklist-remove" data-remove-item aria-label="Remove ${escapeHtml(item.title || 'document')}" ${item.hasUpload ? 'disabled title="Uploaded items cannot be removed"' : ''}>Remove</button>
+        </div>`).join('');
+    }
+
+    window.openClientModal = async function(clientId) {
+        const dialog = document.getElementById('client-edit-dialog');
+        const error = document.getElementById('client-edit-error');
+        const saveButton = document.getElementById('save-client-edit');
+        document.getElementById('client-edit-title').textContent = 'Edit client checklist';
+        document.getElementById('client-edit-summary').textContent = 'Loading client details…';
+        document.getElementById('checklist-editor').replaceChildren();
+        error.textContent = '';
+        dialog.dataset.clientId = clientId;
+        if (!dialog.open) dialog.showModal();
+        saveButton.disabled = true;
+
+        try {
+            const client = await requestJson(`/api/clients/${encodeURIComponent(clientId)}/workspace`);
+            document.getElementById('client-edit-title').textContent = client.businessName || client.name || 'Edit client checklist';
+            document.getElementById('client-edit-summary').textContent = [client.name, client.email, client.phone, client.gstin].filter(Boolean).join(' · ');
+            renderChecklistEditor(client.documentChecklist || []);
+            saveButton.disabled = false;
+        } catch (requestError) {
+            error.textContent = requestError.message;
+            document.getElementById('client-edit-summary').textContent = '';
+        }
+    };
 
     async function loadDashboard() {
         const error = document.getElementById('dashboard-error');
@@ -420,12 +467,59 @@ Purchase Invoices</textarea></div>
         }
     });
     const clientDialog = document.getElementById('client-dialog');
+    const clientEditDialog = document.getElementById('client-edit-dialog');
     document.getElementById('add-client-button').addEventListener('click', () => {
         document.getElementById('client-form-error').textContent = '';
         clientDialog.showModal();
     });
     document.getElementById('close-client-dialog').addEventListener('click', () => clientDialog.close());
     document.getElementById('cancel-client').addEventListener('click', () => clientDialog.close());
+    document.getElementById('close-client-edit').addEventListener('click', () => clientEditDialog.close());
+    document.getElementById('cancel-client-edit').addEventListener('click', () => clientEditDialog.close());
+    document.getElementById('add-checklist-item').addEventListener('click', () => {
+        const container = document.getElementById('checklist-editor');
+        const items = Array.from(container.querySelectorAll('.checklist-edit-row')).map(row => ({
+            id: row.dataset.itemId,
+            title: row.querySelector('[data-checklist-title]').value,
+            submitted: row.querySelector('.checklist-state input').checked,
+            hasUpload: row.dataset.hasUpload === 'true'
+        }));
+        items.push({ id: `new-${crypto.randomUUID()}`, title: '', submitted: false, hasUpload: false });
+        renderChecklistEditor(items);
+        container.querySelector('.checklist-edit-row:last-child [data-checklist-title]').focus();
+    });
+    document.getElementById('checklist-editor').addEventListener('click', event => {
+        const removeButton = event.target.closest('[data-remove-item]');
+        if (removeButton && !removeButton.disabled) removeButton.closest('.checklist-edit-row').remove();
+    });
+    document.getElementById('client-edit-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = document.getElementById('save-client-edit');
+        const error = document.getElementById('client-edit-error');
+        const requestedChecklist = Array.from(document.querySelectorAll('#checklist-editor .checklist-edit-row')).map(row => ({
+            id: row.dataset.itemId,
+            title: row.querySelector('[data-checklist-title]').value.trim()
+        }));
+        if (requestedChecklist.length < 1 || requestedChecklist.some(item => !item.title)) {
+            error.textContent = 'Keep at least one checklist item and give each item a name.';
+            return;
+        }
+        button.disabled = true;
+        error.textContent = '';
+        try {
+            await requestJson(`/api/clients/${encodeURIComponent(clientEditDialog.dataset.clientId)}/checklist`, {
+                method: 'PUT',
+                body: JSON.stringify({ documentChecklist: requestedChecklist })
+            });
+            clientEditDialog.close();
+            showToast('Client checklist saved.');
+            await loadDashboard();
+        } catch (saveError) {
+            error.textContent = saveError.message;
+        } finally {
+            button.disabled = false;
+        }
+    });
     document.getElementById('client-form').addEventListener('submit', async event => {
         event.preventDefault();
         const formElement = event.currentTarget;
@@ -474,6 +568,11 @@ Purchase Invoices</textarea></div>
         }
     });
     document.getElementById('client-table-body').addEventListener('click', async event => {
+        const clientButton = event.target.closest('[data-open-client]');
+        if (clientButton) {
+            await window.openClientModal(clientButton.dataset.openClient);
+            return;
+        }
         const copyButton = event.target.closest('[data-copy]');
         if (copyButton) {
             try {
