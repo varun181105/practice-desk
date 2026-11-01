@@ -24,7 +24,11 @@
         "submitted": false
       }
     ],
-    "uploadToken": "ee0abe17e45fae9d362794299d510a209915fd4181cc796e5d3b3af139414865"
+    "uploadToken": "ee0abe17e45fae9d362794299d510a209915fd4181cc796e5d3b3af139414865",
+    "notificationChannel": null,
+    "whatsappPhone": "",
+    "reminderCount": 0,
+    "firstReminderSentAt": null
   },
   {
     "id": "client-2",
@@ -41,7 +45,11 @@
         "submitted": false
       }
     ],
-    "uploadToken": "6ccdeebc281ffaefb495e06a4f121431325dc613ad56318b69f16f065066db08"
+    "uploadToken": "6ccdeebc281ffaefb495e06a4f121431325dc613ad56318b69f16f065066db08",
+    "notificationChannel": null,
+    "whatsappPhone": "",
+    "reminderCount": 0,
+    "firstReminderSentAt": null
   },
   {
     "id": "client-3",
@@ -63,6 +71,10 @@
         "submitted": true
       }
     ],
-    "uploadToken": "c9ada2e85e2ad4023b7406d714f32f467342569a3d6d11886ef672bd44a26a5e"
+    "uploadToken": "c9ada2e85e2ad4023b7406d714f32f467342569a3d6d11886ef672bd44a26a5e",
+    "notificationChannel": null,
+    "whatsappPhone": "",
+    "reminderCount": 0,
+    "firstReminderSentAt": null
   }
 ]

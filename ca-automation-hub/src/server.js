@@ -20,6 +20,7 @@ const {
 const { triggerReminders, triggerScheduledReminders, computeTargetDueDates } = require('./reminders/engine');
 const { getAuditLogs, logActivity } = require('./lib/auditLogger');
 const { readState, writeState, readClientsForCa, readSettingsForCa, writeSettingsForCa, writeClientsForCa, insertClientsForCa, getStorageType, configureSupabase } = require('./lib/storage');
+const { sanitizePracticeSettings } = require('./lib/settings');
 
 require('dotenv').config();
 
@@ -27,6 +28,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const uploadsPath = path.join(__dirname, '../data/uploads');
 const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+const notificationChannels = new Set(['email_only', 'whatsapp_only', 'both', 'escalation']);
 let supabaseClient;
 
 if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)) {
@@ -179,6 +181,9 @@ app.post('/api/clients', checkAuth, requireTenantAuth, async (req, res) => {
       status: 'Pending',
       dueDayOfMonth: 5,
       autoRemind: true,
+      notificationChannel: null,
+      whatsappPhone: '',
+      reminderCount: 0,
       documentChecklist: documentTitles.map((title, index) => ({
         id: `document-${index + 1}`,
         title: title.trim(),
@@ -233,7 +238,7 @@ app.post('/api/clients/import', checkAuth, requireTenantAuth, importUpload.singl
       if (gstin) seenGstins.add(gstin);
       clients.push({
         id: `client-${crypto.randomUUID()}`, uploadToken: crypto.randomBytes(32).toString('hex'), caId: req.caId, name, businessName, email, phone, gstin,
-        status: 'Pending', dueDayOfMonth: 5, autoRemind: true,
+        status: 'Pending', dueDayOfMonth: 5, autoRemind: true, notificationChannel: null, whatsappPhone: '', reminderCount: 0, firstReminderSentAt: null,
         documentChecklist: defaultDocuments.map((title, documentIndex) => ({
           id: `document-${documentIndex + 1}`, title, submitted: false
         }))
@@ -270,7 +275,7 @@ app.get('/api/settings', checkAuth, async (req, res) => {
   try {
     const settings = await readSettingsForCa(req.caId);
     const dueDates = computeTargetDueDates(settings);
-    const { auth, ...publicSettings } = settings;
+    const publicSettings = sanitizePracticeSettings(settings);
     res.json({ ...publicSettings, computedDueDates: dueDates });
   } catch (err) {
     res.status(500).json({ error: 'Failed to read settings configuration' });
@@ -280,15 +285,33 @@ app.get('/api/settings', checkAuth, async (req, res) => {
 app.post('/api/settings', checkAuth, async (req, res) => {
   try {
     const newSettings = await readSettingsForCa(req.caId);
-    const { firmName, reminders, statutoryCalendar, googleSheets, n8n, baseUrl } = req.body;
+    const { firmName, reminders, statutoryCalendar, googleSheets, n8n, whatsapp, baseUrl } = req.body;
     if (firmName !== undefined) newSettings.firmName = String(firmName).trim().slice(0, 70);
     if (reminders !== undefined) {
       if (!Number.isInteger(reminders.intervalDays) || reminders.intervalDays < 1 || reminders.intervalDays > 90) {
         return res.status(400).json({ error: 'Reminder interval must be between 1 and 90 days.' });
       }
+      const primaryDayOfMonth = reminders.primaryDayOfMonth ?? newSettings.reminders?.primaryDayOfMonth ?? 3;
+      if (!Number.isInteger(primaryDayOfMonth) || primaryDayOfMonth < 1 || primaryDayOfMonth > 31) {
+        return res.status(400).json({ error: 'Primary reminder day must be between 1 and 31.' });
+      }
+      const defaultNotificationChannel = reminders.defaultNotificationChannel ?? newSettings.reminders?.defaultNotificationChannel ?? 'email_only';
+      if (!notificationChannels.has(defaultNotificationChannel)) {
+        return res.status(400).json({ error: 'Choose a supported default notification channel.' });
+      }
+      const escalationAfterReminders = reminders.escalationAfterReminders ?? newSettings.reminders?.escalationAfterReminders ?? 2;
+      const escalationAfterDays = reminders.escalationAfterDays ?? newSettings.reminders?.escalationAfterDays ?? 3;
+      if (!Number.isInteger(escalationAfterReminders) || escalationAfterReminders < 1 || escalationAfterReminders > 10 ||
+        !Number.isInteger(escalationAfterDays) || escalationAfterDays < 1 || escalationAfterDays > 90) {
+        return res.status(400).json({ error: 'Escalation limits must be 1–10 reminders and 1–90 days.' });
+      }
       newSettings.reminders = {
         ...newSettings.reminders,
         intervalDays: reminders.intervalDays,
+        primaryDayOfMonth,
+        defaultNotificationChannel,
+        escalationAfterReminders,
+        escalationAfterDays,
         autoRemindersEnabled: Boolean(reminders.autoRemindersEnabled)
       };
     }
@@ -304,6 +327,30 @@ app.post('/api/settings', checkAuth, async (req, res) => {
         }
       }
       newSettings.n8n = { ...newSettings.n8n, webhookUrl };
+    }
+    if (whatsapp !== undefined) {
+      const currentWhatsapp = newSettings.whatsapp || {};
+      const phoneNumberId = String(whatsapp.phoneNumberId ?? currentWhatsapp.phoneNumberId ?? '').trim();
+      const webhookUrl = String(whatsapp.webhookUrl ?? currentWhatsapp.webhookUrl ?? '').trim();
+      const templateName = String(whatsapp.templateName ?? currentWhatsapp.templateName ?? 'document_reminder').trim();
+      const languageCode = String(whatsapp.languageCode ?? currentWhatsapp.languageCode ?? 'en_US').trim();
+      const apiVersion = String(whatsapp.apiVersion ?? currentWhatsapp.apiVersion ?? 'v22.0').trim();
+      if (phoneNumberId.length > 100 || !/^[a-z0-9_]{1,512}$/i.test(templateName) ||
+        !/^[a-z]{2}_[A-Z]{2}$/.test(languageCode) || !/^v\d+\.\d+$/.test(apiVersion)) {
+        return res.status(400).json({ error: 'WhatsApp phone ID, template, language, or API version is invalid.' });
+      }
+      if (webhookUrl) {
+        try {
+          if (!['http:', 'https:'].includes(new URL(webhookUrl).protocol)) throw new Error('invalid protocol');
+        } catch (err) {
+          return res.status(400).json({ error: 'Enter a valid HTTP or HTTPS WhatsApp webhook URL.' });
+        }
+      }
+      const accessToken = whatsapp.clearAccessToken === true
+        ? ''
+        : String(whatsapp.accessToken || '').trim() || currentWhatsapp.accessToken || '';
+      if (accessToken.length > 4096) return res.status(400).json({ error: 'WhatsApp access token is too long.' });
+      newSettings.whatsapp = { phoneNumberId, webhookUrl, templateName, languageCode, apiVersion, accessToken };
     }
     if (baseUrl !== undefined) {
       const publicBaseUrl = String(baseUrl).trim().replace(/\/+$/, '');
@@ -321,7 +368,7 @@ app.post('/api/settings', checkAuth, async (req, res) => {
       eventType: 'SETTINGS_UPDATED',
       details: 'Workspace settings updated.'
     });
-    const { auth, ...publicSettings } = newSettings;
+    const publicSettings = sanitizePracticeSettings(newSettings);
     res.status(200).json({ message: 'Settings saved successfully', settings: publicSettings });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save settings' });
@@ -341,6 +388,8 @@ app.get('/api/clients/:id/workspace', checkAuth, requireTenantAuth, async (req, 
       email: client.email,
       phone: client.phone,
       gstin: client.gstin,
+        notificationChannel: client.notificationChannel || null,
+        whatsappPhone: client.whatsappPhone || '',
       documentChecklist: (client.documentChecklist || []).map(item => ({
         id: item.id,
         title: item.title || item.label || item.id,
@@ -352,7 +401,6 @@ app.get('/api/clients/:id/workspace', checkAuth, requireTenantAuth, async (req, 
     res.status(500).json({ error: 'Failed to read client details.' });
   }
 });
-
 app.get('/api/clients/:id', async (req, res) => {
   try {
     const clients = await getClients();
@@ -400,6 +448,21 @@ app.put('/api/clients/:id/checklist', checkAuth, requireTenantAuth, async (req, 
     }
 
     const client = clients[index];
+    if (Object.hasOwn(req.body, 'notificationChannel')) {
+      const channel = req.body.notificationChannel;
+      if (channel !== '' && channel !== null && !notificationChannels.has(channel)) {
+        return res.status(400).json({ error: 'Choose a supported client notification channel.' });
+      }
+      client.notificationChannel = channel || null;
+    }
+    if (Object.hasOwn(req.body, 'whatsappPhone')) {
+      const rawWhatsappPhone = String(req.body.whatsappPhone || '').trim();
+      const digits = rawWhatsappPhone.replace(/\D/g, '');
+      if (rawWhatsappPhone && !/^[1-9]\d{7,14}$/.test(digits)) {
+        return res.status(400).json({ error: 'Enter a WhatsApp number with country code.' });
+      }
+      client.whatsappPhone = digits ? `+${digits}` : '';
+    }
     const currentItems = client.documentChecklist || [];
     const currentById = new Map(currentItems.map(item => [item.id, item]));
     const requestedIds = new Set();
@@ -469,9 +532,24 @@ async function handleTriggerRemindersRoute(req, res) {
       details: 'Manual reminder dispatch requested from the dashboard.'
     });
     const result = await triggerReminders({ caId: req.caId });
-    res.status(200).json({ message: 'Reminders triggered successfully', ...result });
+    const failedCount = (result.details || []).filter(detail => !detail.success).length;
+    const warningCount = (result.details || []).reduce((total, detail) => total + (detail.warnings || []).length, 0);
+    const message = result.dispatchedCount
+      ? `${result.dispatchedCount} reminder${result.dispatchedCount === 1 ? '' : 's'} sent${failedCount ? `; ${failedCount} failed` : ''}${warningCount ? `; ${warningCount} channel warning${warningCount === 1 ? '' : 's'}` : ''}.`
+      : failedCount
+        ? `No reminders sent; ${failedCount} failed.`
+        : 'No clients currently need a reminder.';
+    const hasDeliveryIssues = failedCount > 0 || warningCount > 0;
+    res.status(hasDeliveryIssues ? 207 : 200).json({
+      ...result,
+      success: !hasDeliveryIssues,
+      failedCount,
+      warningCount,
+      message
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Reminder API] Manual reminder dispatch failed:', err);
+    res.status(500).json({ success: false, error: 'Reminder dispatch failed.', message: err.message });
   }
 }
 

@@ -1,6 +1,10 @@
 {
   "reminders": {
     "intervalDays": 2,
+    "primaryDayOfMonth": 3,
+    "defaultNotificationChannel": "email_only",
+    "escalationAfterReminders": 2,
+    "escalationAfterDays": 3,
     "autoRemindersEnabled": true,
     "channels": ["whatsapp", "email"],
     "nudgeSchedule": [
@@ -31,6 +35,14 @@
   },
   "n8n": {
     "webhookUrl": ""
+  },
+  "whatsapp": {
+    "phoneNumberId": "",
+    "accessToken": "",
+    "webhookUrl": "",
+    "templateName": "document_reminder",
+    "languageCode": "en_US",
+    "apiVersion": "v22.0"
   },
   "baseUrl": "http://localhost:3000"
 }

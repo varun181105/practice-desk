@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 
 let transporter;
+const defaultSender = '"CA Varun Kumar" <varun181105@gmail.com>';
 
 function isEmailConfigured() {
   return Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
@@ -13,6 +14,9 @@ function getTransporter() {
   if (!transporter) {
     transporter = nodemailer.createTransport({
       service: process.env.EMAIL_SERVICE || 'gmail',
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -41,7 +45,7 @@ function buildReminderEmail(client, missingDocuments, uploadUrl) {
   const safeUploadUrl = escapeHtml(uploadUrl);
 
   return {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER || '',
+    from: process.env.EMAIL_FROM || defaultSender,
     to: client.email,
     subject: `Document reminder: pending items for ${businessName}`,
     text: `Hello ${name},\n\nPlease upload these pending documents for ${businessName}:\n${listText}\n\nUpload documents here: ${uploadUrl}\n`,
@@ -51,6 +55,9 @@ function buildReminderEmail(client, missingDocuments, uploadUrl) {
 
 async function sendDocumentReminder(client, missingDocuments, uploadUrl) {
   if (!client.email) throw new Error('Client email address is missing.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(client.email).trim())) {
+    throw new Error('Client email address is invalid.');
+  }
   return getTransporter().sendMail(buildReminderEmail(client, missingDocuments, uploadUrl));
 }
 

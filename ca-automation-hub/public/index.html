@@ -89,11 +89,24 @@
                 <div class="settings-grid">
                     <section class="setting-card"><h2>Practice & reminders</h2><p>Keep reminder automation aligned with how your firm works.</p>
                         <div class="field-row"><label for="firm-name-input">Practice name</label><input class="field" id="firm-name-input" maxlength="70" placeholder="Your CA practice"></div>
+                        <div class="field-row"><label for="primary-reminder-day">Primary reminder day of month</label><input class="field" id="primary-reminder-day" type="number" min="1" max="31"></div>
                         <div class="field-row"><label for="reminder-interval">Reminder interval (days)</label><input class="field" id="reminder-interval" type="number" min="1" max="90"></div>
-                        <div class="field-row"><label for="webhook-url">Reminder workflow URL</label><input class="field" id="webhook-url" type="url" placeholder="https://…"><div class="field-help">Optional. Connect your n8n workflow to deliver reminders.</div></div>
+                        <div class="field-row"><label for="escalation-after-reminders">Escalate after reminders sent</label><input class="field" id="escalation-after-reminders" type="number" min="1" max="10"></div>
+                        <div class="field-row"><label for="escalation-after-days">Escalate after pending days</label><input class="field" id="escalation-after-days" type="number" min="1" max="90"></div>
+                        <div class="field-row"><label for="default-notification-channel">Default notification channel</label><select class="field" id="default-notification-channel"><option value="email_only">Email only</option><option value="whatsapp_only">WhatsApp only</option><option value="both">Email and WhatsApp</option><option value="escalation">Escalation</option></select></div>
+                        <div class="field-row"><label for="webhook-url">n8n WhatsApp fallback URL</label><input class="field" id="webhook-url" type="url" placeholder="https://…"><div class="field-help">Used when WhatsApp is selected and no dedicated WhatsApp webhook is configured.</div></div>
                         <div class="field-row"><label for="base-url">Public portal URL</label><input class="field" id="base-url" type="url" placeholder="https://your-domain.example"><div class="field-help">Used when generating upload links for reminder workflows.</div></div>
                         <div class="toggle-row"><span>Automatic reminders enabled</span><input id="reminders-enabled" type="checkbox" aria-label="Automatic reminders enabled"></div>
                         <button class="button button-primary" id="save-settings">Save preferences</button><span id="save-message" class="field-help" role="status"></span>
+                    </section>
+                    <section class="setting-card"><h2>WhatsApp delivery</h2><p>Configure Meta Cloud API or a delivery webhook. Access tokens are write-only.</p>
+                        <div class="field-row"><label for="whatsapp-phone-number-id">Meta phone number ID</label><input class="field" id="whatsapp-phone-number-id" maxlength="100"></div>
+                        <div class="field-row"><label for="whatsapp-access-token">Meta access token</label><input class="field" id="whatsapp-access-token" type="password" autocomplete="new-password" placeholder="Leave blank to keep current token"><div class="field-help" id="whatsapp-token-status"></div></div>
+                        <div class="toggle-row"><span>Clear saved access token</span><input id="clear-whatsapp-token" type="checkbox" aria-label="Clear saved WhatsApp access token"></div>
+                        <div class="field-row"><label for="whatsapp-webhook-url">WhatsApp webhook URL</label><input class="field" id="whatsapp-webhook-url" type="url" placeholder="https://…"></div>
+                        <div class="field-row"><label for="whatsapp-template-name">Approved template name</label><input class="field" id="whatsapp-template-name" maxlength="512" value="document_reminder"></div>
+                        <div class="field-row"><label for="whatsapp-language-code">Template language</label><input class="field" id="whatsapp-language-code" maxlength="5" value="en_US"></div>
+                        <div class="field-row"><label for="whatsapp-api-version">Graph API version</label><input class="field" id="whatsapp-api-version" maxlength="12" value="v22.0"></div>
                     </section>
                     <section class="setting-card"><h2>Statutory calendar</h2><p>Upcoming due dates calculated from your configured calendar.</p><div id="statutory-calendar-list" class="calendar-list"><div class="empty">Loading calendar…</div></div></section>
                 </div>
@@ -125,6 +138,8 @@ Purchase Invoices</textarea></div>
         <div class="dialog-head"><h2 id="client-edit-title">Edit client checklist</h2><button type="button" class="dialog-close" id="close-client-edit" aria-label="Close">×</button></div>
         <div class="dialog-body">
             <div class="edit-client-summary" id="client-edit-summary"></div>
+            <div class="field-row"><label for="client-notification-channel">Notification channel</label><select class="field" id="client-notification-channel"><option value="">Use practice default</option><option value="email_only">Email only</option><option value="whatsapp_only">WhatsApp only</option><option value="both">Email and WhatsApp</option><option value="escalation">Escalation</option></select></div>
+            <div class="field-row"><label for="client-whatsapp-phone">WhatsApp number with country code</label><input class="field" id="client-whatsapp-phone" type="tel" maxlength="20" placeholder="+919876543210"></div>
             <div class="field-row"><label>Requested documents</label><div class="checklist-editor" id="checklist-editor"></div></div>
             <button type="button" class="button" id="add-checklist-item">Add checklist item</button>
             <div id="client-edit-error" class="dialog-error" role="alert"></div>
@@ -180,9 +195,11 @@ Purchase Invoices</textarea></div>
         });
         document.getElementById('client-table-body').innerHTML = '<tr><td colspan="5" class="empty">Access restricted</td></tr>';
         document.getElementById('audit-log-list').replaceChildren();
-        ['firm-name-input', 'webhook-url', 'base-url'].forEach(id => {
+        ['firm-name-input', 'primary-reminder-day', 'reminder-interval', 'escalation-after-reminders', 'escalation-after-days', 'default-notification-channel', 'webhook-url', 'base-url', 'whatsapp-phone-number-id', 'whatsapp-access-token', 'whatsapp-webhook-url', 'whatsapp-template-name', 'whatsapp-language-code', 'whatsapp-api-version', 'client-notification-channel', 'client-whatsapp-phone'].forEach(id => {
             document.getElementById(id).value = '';
         });
+        document.getElementById('whatsapp-token-status').textContent = '';
+        document.getElementById('clear-whatsapp-token').checked = false;
         document.getElementById('statutory-calendar-list').replaceChildren();
         if (clientDialog?.open) clientDialog.close();
         if (clientEditDialog?.open) clientEditDialog.close();
@@ -327,6 +344,8 @@ Purchase Invoices</textarea></div>
             const client = await requestJson(`/api/clients/${encodeURIComponent(clientId)}/workspace`);
             document.getElementById('client-edit-title').textContent = client.businessName || client.name || 'Edit client checklist';
             document.getElementById('client-edit-summary').textContent = [client.name, client.email, client.phone, client.gstin].filter(Boolean).join(' · ');
+            document.getElementById('client-notification-channel').value = client.notificationChannel || '';
+            document.getElementById('client-whatsapp-phone').value = client.whatsappPhone || '';
             renderChecklistEditor(client.documentChecklist || []);
             saveButton.disabled = false;
         } catch (requestError) {
@@ -379,10 +398,23 @@ Purchase Invoices</textarea></div>
         try {
             settings = await requestJson('/api/settings');
             document.getElementById('firm-name-input').value = settings.firmName || '';
+            document.getElementById('primary-reminder-day').value = settings.reminders?.primaryDayOfMonth || 3;
             document.getElementById('reminder-interval').value = settings.reminders?.intervalDays || 2;
+            document.getElementById('escalation-after-reminders').value = settings.reminders?.escalationAfterReminders || 2;
+            document.getElementById('escalation-after-days').value = settings.reminders?.escalationAfterDays || 3;
+            document.getElementById('default-notification-channel').value = settings.reminders?.defaultNotificationChannel || 'email_only';
             document.getElementById('webhook-url').value = settings.n8n?.webhookUrl || '';
             document.getElementById('base-url').value = settings.baseUrl || '';
             document.getElementById('reminders-enabled').checked = Boolean(settings.reminders?.autoRemindersEnabled);
+            const whatsapp = settings.whatsapp || {};
+            document.getElementById('whatsapp-phone-number-id').value = whatsapp.phoneNumberId || '';
+            document.getElementById('whatsapp-access-token').value = '';
+            document.getElementById('whatsapp-token-status').textContent = whatsapp.accessTokenConfigured ? 'Access token saved.' : 'No access token saved.';
+            document.getElementById('clear-whatsapp-token').checked = false;
+            document.getElementById('whatsapp-webhook-url').value = whatsapp.webhookUrl || '';
+            document.getElementById('whatsapp-template-name').value = whatsapp.templateName || 'document_reminder';
+            document.getElementById('whatsapp-language-code').value = whatsapp.languageCode || 'en_US';
+            document.getElementById('whatsapp-api-version').value = whatsapp.apiVersion || 'v22.0';
             document.getElementById('firm-name').textContent = settings.firmName || 'Practice Desk';
             const dates = settings.computedDueDates || [];
             document.getElementById('statutory-calendar-list').innerHTML = dates.length ? dates.map(item => `<div class="calendar-item"><div><div class="calendar-name">${escapeHtml(item.label)}</div><div class="calendar-date">${escapeHtml(item.dueDate)}</div></div><span class="due-tag">${item.daysRemaining === 0 ? 'Due today' : `${escapeHtml(item.daysRemaining)} days left`}</span></div>`).join('') : '<div class="empty">No statutory dates configured.</div>';
@@ -396,21 +428,47 @@ Purchase Invoices</textarea></div>
         const button = document.getElementById('save-settings');
         const message = document.getElementById('save-message');
         const interval = Number(document.getElementById('reminder-interval').value);
+        const primaryDay = Number(document.getElementById('primary-reminder-day').value);
+        const escalationAfterReminders = Number(document.getElementById('escalation-after-reminders').value);
+        const escalationAfterDays = Number(document.getElementById('escalation-after-days').value);
+        const defaultNotificationChannel = document.getElementById('default-notification-channel').value;
         if (!Number.isInteger(interval) || interval < 1 || interval > 90) {
             message.textContent = 'Choose an interval between 1 and 90 days.';
+            return;
+        }
+        if (!Number.isInteger(primaryDay) || primaryDay < 1 || primaryDay > 31) {
+            message.textContent = 'Choose a primary reminder day between 1 and 31.';
+            return;
+        }
+        if (!Number.isInteger(escalationAfterReminders) || escalationAfterReminders < 1 || escalationAfterReminders > 10 ||
+            !Number.isInteger(escalationAfterDays) || escalationAfterDays < 1 || escalationAfterDays > 90) {
+            message.textContent = 'Choose escalation limits of 1–10 reminders and 1–90 days.';
             return;
         }
         button.disabled = true;
         message.textContent = 'Saving…';
         const updated = { ...settings };
         updated.firmName = document.getElementById('firm-name-input').value.trim();
-        updated.reminders = { ...updated.reminders, intervalDays: interval, autoRemindersEnabled: document.getElementById('reminders-enabled').checked };
+        updated.reminders = { ...updated.reminders, primaryDayOfMonth: primaryDay, intervalDays: interval, defaultNotificationChannel, escalationAfterReminders, escalationAfterDays, autoRemindersEnabled: document.getElementById('reminders-enabled').checked };
         updated.n8n = { ...updated.n8n, webhookUrl: document.getElementById('webhook-url').value.trim() };
         updated.baseUrl = document.getElementById('base-url').value.trim();
+        updated.whatsapp = {
+            ...(updated.whatsapp || {}),
+            phoneNumberId: document.getElementById('whatsapp-phone-number-id').value.trim(),
+            accessToken: document.getElementById('whatsapp-access-token').value,
+            clearAccessToken: document.getElementById('clear-whatsapp-token').checked,
+            webhookUrl: document.getElementById('whatsapp-webhook-url').value.trim(),
+            templateName: document.getElementById('whatsapp-template-name').value.trim(),
+            languageCode: document.getElementById('whatsapp-language-code').value.trim(),
+            apiVersion: document.getElementById('whatsapp-api-version').value.trim()
+        };
         delete updated.computedDueDates;
         try {
-            await requestJson('/api/settings', { method: 'POST', body: JSON.stringify(updated) });
-            settings = updated;
+            const result = await requestJson('/api/settings', { method: 'POST', body: JSON.stringify(updated) });
+            settings = result.settings || updated;
+            document.getElementById('whatsapp-access-token').value = '';
+            document.getElementById('clear-whatsapp-token').checked = false;
+            document.getElementById('whatsapp-token-status').textContent = settings.whatsapp?.accessTokenConfigured ? 'Access token saved.' : 'No access token saved.';
             document.getElementById('firm-name').textContent = updated.firmName || 'Practice Desk';
             message.textContent = 'Preferences saved.';
             showToast('Workspace settings saved.');
@@ -509,7 +567,11 @@ Purchase Invoices</textarea></div>
         try {
             await requestJson(`/api/clients/${encodeURIComponent(clientEditDialog.dataset.clientId)}/checklist`, {
                 method: 'PUT',
-                body: JSON.stringify({ documentChecklist: requestedChecklist })
+                body: JSON.stringify({
+                    documentChecklist: requestedChecklist,
+                    notificationChannel: document.getElementById('client-notification-channel').value,
+                    whatsappPhone: document.getElementById('client-whatsapp-phone').value.trim()
+                })
             });
             clientEditDialog.close();
             showToast('Client checklist saved.');
@@ -557,8 +619,7 @@ Purchase Invoices</textarea></div>
         button.textContent = 'Sending reminders…';
         try {
             const result = await requestJson('/api/send-reminders', { method: 'POST', body: '{}' });
-            const failed = (result.details || []).filter(detail => !detail.success).length;
-            showToast(failed ? `${result.dispatchedCount || 0} sent; ${failed} not sent. Check email or reminder settings.` : `${result.dispatchedCount || 0} reminder${result.dispatchedCount === 1 ? '' : 's'} sent.`);
+            showToast(result.message || `${result.dispatchedCount || 0} reminders processed.`);
             loadAudit();
         } catch (error) {
             showToast(error.message);

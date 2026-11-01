@@ -28,14 +28,14 @@ Requirements: Node.js 18 or newer.
 - **Client onboarding:** create client records and custom document checklists from the dashboard.
 - **Bulk client import:** import `.xlsx` or `.csv` files with `Business Name`, `Contact Name`, `Email`, `Phone`, and `GSTIN` columns. Imported clients receive Sales Register, Bank Statement, and Purchase Invoices checklist items.
 - **Google sign-in:** authenticate CA practices with Supabase OAuth; client records are stored and queried by the authenticated Supabase user ID (`ca_id`).
-- **Scheduled reminders:** at 9:00 AM server local time each day, email and/or n8n reminders are sent for clients whose due day has arrived, who still have outstanding documents, and whose automatic reminders are enabled. Each message lists only that client's unsubmitted checklist items and links to their upload portal.
+- **Scheduled reminders:** at 9:00 AM server local time each day, per-client Email, WhatsApp, Both, or Escalation preferences choose the delivery channel. Escalation starts with Email and switches to WhatsApp after the configured attempt or day threshold. Each reminder lists only that client's unsubmitted checklist items and secure upload link.
 - **Client portal:** share a per-client capability link backed by a random upload token, not the database client ID. Clients can submit PDF, JPEG, PNG, or WebP files up to 10 MB each; public portal APIs require that token and do not return internal client records or dashboard statistics.
 - **Document retention:** accepted uploads are stored in `data/uploads/`; staff can download them from the authenticated dashboard. Keep this directory private and include it in your secured backup plan.
 - **Activity log:** client creation, document receipts, and successful reminder dispatches are stored with the application state.
 - **Compliance calendar:** shows upcoming dates based on `config/settings.json`.
 - **Optional integrations:** Anthropic parsing is used only when `ANTHROPIC_API_KEY` is configured. Without it, files are still retained for manual review and are never presented with made-up extracted figures. Configure an n8n reminder webhook in **Settings** to connect your own delivery workflow.
 
-The reminder button sends native email when email credentials are configured and also calls the configured n8n webhook when present. Email and webhook delivery can be used together. No email credentials or webhook are configured by default.
+The reminder button sends through each client's configured Email/WhatsApp preference. WhatsApp can use Meta Cloud API or a configured webhook; delivery outcomes and channel failures are returned per client. No WhatsApp credentials or endpoint are configured by default.
 
 ## Configuration
 
@@ -53,7 +53,7 @@ Copy `.env.example` to `.env` and configure:
 | `EMAIL_SERVICE` | Nodemailer service name (defaults to `gmail`) |
 | `EMAIL_USER` | Sender account for native reminder email |
 | `EMAIL_PASS` | Sender password or Gmail app password; keep it secret |
-| `EMAIL_FROM` | Optional sender display/address override; defaults to `EMAIL_USER` |
+| `EMAIL_FROM` | Optional sender display/address override; defaults to `CA Varun Kumar <varun181105@gmail.com>`; use this Gmail account or a verified sender alias |
 | `PUBLIC_PORTAL_URL` | Optional public origin used to construct client upload links; falls back to the Public portal URL setting |
 | `INBOUND_WEBHOOK_SECRET` | Required shared secret in the `x-webhook-secret` header for `/api/webhook/inbound` |
 | `DATABASE_URL` | Optional PostgreSQL (`postgresql://`) or MongoDB (`mongodb://` / `mongodb+srv://`) URI |
@@ -70,7 +70,7 @@ Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as serv
 
 ### Settings and clients
 
-- `config/settings.json`: initial practice name, due dates, reminder interval, optional n8n webhook, spreadsheet names, and public portal base URL. With a database configured, the database state is authoritative after initial seeding.
+- `config/settings.json`: local practice defaults for channel selection, escalation thresholds, email/webhook delivery, statutory dates, and public portal base URL. With Supabase configured, settings are stored per tenant in `practice_settings`.
 - `config/clients.json`: sample client records for local mode only. Production tenants should add or import their own clients after being authorized.
 - `config/audit_logs.json`: local-mode audit log and initial cloud database seed.
 - `data/uploads/`: uploaded documents. This folder is created on first upload and is excluded from source control.
@@ -91,9 +91,15 @@ To enable Sheets sync, configure `GOOGLE_SERVICE_ACCOUNT_JSON`, set the spreadsh
 
 Create a workflow that accepts the reminder JSON payload, configure its HTTPS webhook URL under **Settings**, and set the public portal URL there as well. The payload contains client contact details, missing document labels, upload link, due dates, and timestamp. Secure the webhook with your n8n authentication controls before connecting it.
 
-### Native email reminders
+### Multi-channel reminders
 
-Set `EMAIL_USER` and `EMAIL_PASS` in `.env` or the hosting provider's secret settings. For Gmail, enable 2-step verification and use a Google app password; do not use your normal account password. Set `PUBLIC_PORTAL_URL` to the deployed HTTPS origin. The dashboard button calls the authenticated `POST /api/send-reminders` endpoint. Each recipient gets only their own unsubmitted checklist items and `/upload/:clientId` link. The daily cron uses the same delivery settings.
+Configure the practice default channel and escalation thresholds under Settings. Each client can override the default and store a WhatsApp number in the client drawer. `email_only`, `whatsapp_only`, `both`, and `escalation` are supported; escalation uses the reminder count and elapsed days since the monthly primary day.
+
+For Email, set `EMAIL_USER=varun181105@gmail.com` and `EMAIL_PASS` in `.env` or host secrets. For Gmail, use a Google app password, not the normal account password. The default From is `CA Varun Kumar <varun181105@gmail.com>`; use this authenticated account or a verified sender alias.
+
+For Meta WhatsApp, save the phone number ID and access token under Settings, and configure an approved template named in those settings. The template must accept three body parameters in order: business name, pending document names, and upload URL. Alternatively, configure a WhatsApp webhook URL to receive a JSON payload with recipient, business, missing items, and tokenized upload link. WhatsApp access tokens are stored server-side and never returned by settings APIs. Local-only mode keeps them in process memory; use Supabase for persistent production credentials.
+
+Set `PUBLIC_PORTAL_URL` to the deployed HTTPS origin. The dashboard button calls authenticated `POST /api/send-reminders`, which returns per-client outcomes and HTTP 207 for partial failures. SMTP, Meta, and webhook requests have finite timeouts; a recipient failure is logged and does not stop remaining clients. Daily cron follows the same per-client channel and escalation preferences.
 
 ## Run and troubleshoot
 

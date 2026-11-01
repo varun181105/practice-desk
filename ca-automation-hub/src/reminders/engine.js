@@ -1,7 +1,7 @@
-const axios = require('axios');
 const { logActivity } = require('../lib/auditLogger');
-const { readState, writeState, readClientsForReminders, readSettingsForCa, writeClientsForCa } = require('../lib/storage');
+const { readClientsForReminders, readSettingsForCa, updateClientsForCa } = require('../lib/storage');
 const { isEmailConfigured, sendDocumentReminder } = require('../lib/email');
+const { sendWhatsAppReminder } = require('../lib/whatsapp');
 require('dotenv').config();
 
 function computeTargetDueDates(settings) {
@@ -42,13 +42,38 @@ function computeTargetDueDates(settings) {
   });
 }
 
-function shouldSendScheduledReminder(client, now = new Date()) {
+function shouldSendScheduledReminder(client, now = new Date(), reminderSettings = {}) {
   const checklist = client.documentChecklist || [];
   const hasMissingItems = checklist.some(item => !item.submitted);
-  const dueDay = Number(client.dueDayOfMonth || 5);
-  return client.autoRemind !== false &&
+  const primaryDay = Number(reminderSettings.primaryDayOfMonth || client.dueDayOfMonth || 5);
+  const intervalDays = Number(reminderSettings.intervalDays || 2);
+  const eligible = client.autoRemind !== false &&
     !['submitted', 'completed'].includes(String(client.status || '').toLowerCase()) &&
-    hasMissingItems && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 && now.getDate() >= dueDay;
+    hasMissingItems && Number.isInteger(primaryDay) && primaryDay >= 1 && primaryDay <= 31 &&
+    Number.isInteger(intervalDays) && intervalDays >= 1 && intervalDays <= 90 && now.getDate() >= primaryDay;
+  if (!eligible) return false;
+
+  const lastSentAt = client.lastReminderSent ? new Date(client.lastReminderSent) : null;
+  if (!lastSentAt || Number.isNaN(lastSentAt.getTime())) return true;
+  const dayNumber = date => Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+  return dayNumber(now) - dayNumber(lastSentAt) >= intervalDays;
+}
+
+function resolveNotificationChannels(client, settings, now = new Date()) {
+  const reminders = settings.reminders || {};
+  const preference = client.notificationChannel || reminders.defaultNotificationChannel || 'email_only';
+  if (preference === 'email_only') return ['email'];
+  if (preference === 'whatsapp_only') return ['whatsapp'];
+  if (preference === 'both') return ['email', 'whatsapp'];
+  if (preference === 'escalation') {
+    const attempts = Number(client.reminderCount || 0);
+    const afterReminders = Number(reminders.escalationAfterReminders || 2);
+    const primaryDay = Number(reminders.primaryDayOfMonth || client.dueDayOfMonth || 5);
+    const afterDays = Number(reminders.escalationAfterDays || 3);
+    const daysAfterPrimary = now.getDate() >= primaryDay ? now.getDate() - primaryDay : 0;
+    return attempts >= afterReminders || daysAfterPrimary >= afterDays ? ['whatsapp'] : ['email'];
+  }
+  return ['email'];
 }
 
 async function triggerReminders(options = {}) {
@@ -74,11 +99,12 @@ async function triggerReminders(options = {}) {
   }
   const clientsToRemind = clients.filter(client => {
     if (options.caId && client.caId !== options.caId) return false;
-    return !options.scheduled || shouldSendScheduledReminder(client, options.now || new Date());
+    return !options.scheduled || shouldSendScheduledReminder(client, options.now || new Date(), settings.reminders || {});
   });
 
   console.log(`[Reminder Engine] Scanning ${clientsToRemind.length} clients for pending requirements...`);
   const results = [];
+  const updatedClientIds = new Set();
 
   for (const client of clientsToRemind) {
     const missingItems = (client.documentChecklist || [])
@@ -98,75 +124,71 @@ async function triggerReminders(options = {}) {
         continue;
       }
       const uploadUrl = new URL(`/upload/${encodeURIComponent(client.uploadToken)}`, portalBase).toString();
-      const webhookConfigured = settings.n8n && settings.n8n.webhookUrl && /^https?:\/\//i.test(settings.n8n.webhookUrl);
-      const payload = {
-        type: 'DOCUMENT_REMINDER',
-        clientId: client.id,
-        caId: client.caId || null,
-        client: {
-          id: client.id,
-          name: client.name,
-          businessName: client.businessName,
-          email: client.email,
-          phone: client.phone
-        },
-        missingDocuments: missingItems,
-        uploadUrl,
-        dueDates,
-        timestamp: new Date().toISOString()
-      };
-
       const channels = [];
       const errors = [];
+      const requestedChannels = resolveNotificationChannels(client, settings, options.now || new Date());
 
-      if (isEmailConfigured()) {
-        if (!client.email) {
-          errors.push('Client email address is missing.');
-        } else {
+      for (const channel of requestedChannels) {
+        if (channel === 'email') {
+          if (!isEmailConfigured()) {
+            errors.push('Email: configure EMAIL_USER and EMAIL_PASS.');
+            continue;
+          }
+          if (!client.email) {
+            errors.push('Email: client email address is missing.');
+            continue;
+          }
           try {
             await sendDocumentReminder(client, missingItems, uploadUrl);
             channels.push('email');
           } catch (err) {
+            console.error(`[Reminder Engine] Email delivery failed for ${client.id} (${client.email}):`, err.message);
             errors.push(`Email: ${err.message}`);
+          }
+        } else if (channel === 'whatsapp') {
+          try {
+            const whatsappResult = await sendWhatsAppReminder(settings, client, missingItems, uploadUrl);
+            channels.push(whatsappResult.channel);
+          } catch (err) {
+            console.error(`[Reminder Engine] WhatsApp delivery failed for ${client.id} (${client.whatsappPhone || 'no number'}):`, err.message);
+            errors.push(`WhatsApp: ${err.message}`);
           }
         }
       }
 
-      if (webhookConfigured) {
-        try {
-          await axios.post(settings.n8n.webhookUrl, payload, { timeout: 10000 });
-          channels.push('n8n');
-        } catch (err) {
-          errors.push(`n8n: ${err.message}`);
-        }
-      }
-
       if (!channels.length) {
-        const noChannelConfigured = !isEmailConfigured() && !webhookConfigured;
         results.push({
           clientId: client.id,
           success: false,
-          error: errors.join(' ') || (noChannelConfigured
-            ? 'Configure email credentials or an n8n reminder webhook.'
-            : 'No reminder could be delivered.')
+          error: errors.join(' ') || 'No reminder could be delivered.'
         });
         continue;
       }
 
-      client.lastReminderSent = new Date().toISOString();
-      results.push({ clientId: client.id, success: true, channels, missingItems, uploadUrl, ...(errors.length ? { warnings: errors } : {}) });
-      await logActivity({
-        eventType: 'REMINDER_DISPATCHED',
-        caId: client.caId,
-        email: client.email,
-        clientId: client.id,
-        clientName: client.businessName,
-        details: `Reminder sent via ${channels.join(' and ')} for missing docs: ${missingItems.join(', ')}`
-      });
+      const sentAt = new Date().toISOString();
+      client.lastReminderSent = sentAt;
+      client.firstReminderSentAt = client.firstReminderSentAt || sentAt;
+      client.reminderCount = Number(client.reminderCount || 0) + 1;
+      updatedClientIds.add(client.id);
+      const dispatchResult = { clientId: client.id, success: true, channels, missingItems, uploadUrl, ...(errors.length ? { warnings: errors } : {}) };
+      try {
+        await logActivity({
+          eventType: 'REMINDER_DISPATCHED',
+          caId: client.caId,
+          email: client.email,
+          clientId: client.id,
+          clientName: client.businessName,
+          details: `Reminder sent via ${channels.join(' and ')} for missing docs: ${missingItems.join(', ')}`
+        });
+      } catch (err) {
+        console.error(`[Reminder Engine] Reminder sent but audit logging failed for ${client.id}:`, err.message);
+        dispatchResult.warnings = [...(dispatchResult.warnings || []), `Audit log: ${err.message}`];
+      }
+      results.push(dispatchResult);
     }
   }
 
-  await writeClientsForCa(options.caId, clients);
+  await updateClientsForCa(options.caId, clients.filter(client => updatedClientIds.has(client.id)));
   return { success: true, dispatchedCount: results.filter(r => r.success).length, details: results, dueDates };
 }
 
@@ -178,4 +200,4 @@ if (require.main === module) {
   triggerReminders();
 }
 
-module.exports = { triggerReminders, triggerScheduledReminders, shouldSendScheduledReminder, computeTargetDueDates };
+module.exports = { triggerReminders, triggerScheduledReminders, shouldSendScheduledReminder, resolveNotificationChannels, computeTargetDueDates };

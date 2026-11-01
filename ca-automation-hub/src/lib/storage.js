@@ -13,6 +13,7 @@ const defaults = { clients: [], settings: {}, audit_logs: [] };
 let adapterPromise;
 let adapter;
 let supabaseClient;
+const localWhatsappAccessTokens = new Map();
 let localOnly = false;
 let fallbackLogged = false;
 
@@ -49,6 +50,10 @@ function clientFromRow(row) {
     id: row.client_key,
     caId: row.ca_id || undefined,
     uploadToken: row.upload_token,
+    notificationChannel: row.notification_channel || undefined,
+    whatsappPhone: row.whatsapp_phone || '',
+    reminderCount: row.reminder_count || 0,
+    ...(row.first_reminder_sent_at ? { firstReminderSentAt: row.first_reminder_sent_at } : {}),
     name: row.name,
     businessName: row.business_name,
     email: row.email || '',
@@ -67,6 +72,10 @@ function clientToRow(client) {
     client_key: client.id,
     ca_id: client.caId || null,
     upload_token: client.uploadToken,
+    notification_channel: client.notificationChannel || null,
+    whatsapp_phone: client.whatsappPhone || '',
+    reminder_count: client.reminderCount || 0,
+    first_reminder_sent_at: client.firstReminderSentAt || null,
     name: client.name,
     business_name: client.businessName,
     email: client.email || '',
@@ -85,12 +94,27 @@ function mergeTenantClients(current, caId, clients) {
   return [...otherTenants, ...clients];
 }
 
+function mergeClientUpdates(current, updates) {
+  const clientsById = new Map(current.map(client => [client.id, client]));
+  for (const client of updates) clientsById.set(client.id, client);
+  return [...clientsById.values()];
+}
+
 function ensureClientUploadTokens(clients) {
   let changed = false;
   const updatedClients = clients.map(client => {
-    if (client.uploadToken) return client;
+    if (client.uploadToken && Object.hasOwn(client, 'notificationChannel') && Object.hasOwn(client, 'whatsappPhone') && Number.isInteger(client.reminderCount)) {
+      return client;
+    }
     changed = true;
-    return { ...client, uploadToken: crypto.randomBytes(32).toString('hex') };
+    return {
+      ...client,
+      uploadToken: client.uploadToken || crypto.randomBytes(32).toString('hex'),
+      notificationChannel: client.notificationChannel || null,
+      whatsappPhone: client.whatsappPhone || '',
+      reminderCount: Number.isInteger(client.reminderCount) && client.reminderCount >= 0 ? client.reminderCount : 0,
+      firstReminderSentAt: client.firstReminderSentAt || null
+    };
   });
   if (changed) writeLocal('clients', updatedClients);
   return { clients: updatedClients, changed };
@@ -105,7 +129,7 @@ async function readClientsForCa(caId) {
   if (connection && connection.type === 'supabase') {
     const { data, error } = await supabaseClient
       .from('clients')
-      .select('client_key, ca_id, upload_token, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
+      .select('client_key, ca_id, upload_token, notification_channel, whatsapp_phone, reminder_count, first_reminder_sent_at, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
       .eq('ca_id', caId)
       .order('client_key');
     if (error) throw error;
@@ -122,7 +146,7 @@ async function readClientsForReminders(caId) {
   if (connection && connection.type === 'supabase') {
     let query = supabaseClient
       .from('clients')
-      .select('client_key, ca_id, upload_token, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
+      .select('client_key, ca_id, upload_token, notification_channel, whatsapp_phone, reminder_count, first_reminder_sent_at, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
       .neq('status', 'Completed')
       .neq('status', 'Submitted');
     if (caId) query = query.eq('ca_id', caId);
@@ -142,7 +166,17 @@ async function readClientsForReminders(caId) {
 }
 
 async function readSettingsForCa(caId) {
-  if (!caId) return readState('settings');
+  if (!caId) {
+    const settings = await readState('settings');
+    if (settings.whatsapp && settings.whatsapp.accessToken) {
+      localWhatsappAccessTokens.set('local', settings.whatsapp.accessToken);
+      delete settings.whatsapp.accessToken;
+      writeLocal('settings', settings);
+    }
+    const accessToken = localWhatsappAccessTokens.get('local');
+    if (accessToken) settings.whatsapp = { ...settings.whatsapp, accessToken };
+    return settings;
+  }
   const connection = await getAdapter();
   if (process.env.SUPABASE_URL && (!connection || connection.type !== 'supabase')) {
     throw new Error('Supabase is unavailable; refusing to read tenant settings from local fallback storage.');
@@ -164,7 +198,14 @@ async function readSettingsForCa(caId) {
 }
 
 async function writeSettingsForCa(caId, settings) {
-  if (!caId) return writeState('settings', settings);
+  if (!caId) {
+    const safeSettings = JSON.parse(JSON.stringify(settings));
+    const accessToken = safeSettings.whatsapp && safeSettings.whatsapp.accessToken;
+    if (accessToken) localWhatsappAccessTokens.set('local', accessToken);
+    else localWhatsappAccessTokens.delete('local');
+    if (safeSettings.whatsapp) delete safeSettings.whatsapp.accessToken;
+    return writeState('settings', safeSettings);
+  }
   const connection = await getAdapter();
   if (process.env.SUPABASE_URL && (!connection || connection.type !== 'supabase')) {
     throw new Error('Supabase is unavailable; refusing to write tenant settings to local fallback storage.');
@@ -195,6 +236,22 @@ async function writeClientsForCa(caId, clients) {
   }
   const allClients = await readState('clients');
   await writeState('clients', mergeTenantClients(allClients, caId, clients));
+}
+
+async function updateClientsForCa(caId, updates) {
+  if (!updates.length) return;
+  const connection = await getAdapter();
+  if (process.env.SUPABASE_URL && (!connection || connection.type !== 'supabase')) {
+    throw new Error('Supabase is unavailable; refusing to update tenant data from local fallback storage.');
+  }
+  if (connection && connection.type === 'supabase') {
+    const { error } = await supabaseClient.from('clients').upsert(updates.map(clientToRow), { onConflict: 'client_key' });
+    if (error) throw error;
+    writeLocal('clients', mergeClientUpdates(readLocal('clients'), updates));
+    return;
+  }
+  const allClients = await readState('clients');
+  await writeState('clients', mergeClientUpdates(allClients, updates));
 }
 
 async function insertClientsForCa(caId, clients) {
@@ -284,7 +341,7 @@ async function connectAdapter() {
         if (key === 'clients') {
           const { data, error } = await supabaseClient
             .from('clients')
-            .select('client_key, ca_id, upload_token, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
+            .select('client_key, ca_id, upload_token, notification_channel, whatsapp_phone, reminder_count, first_reminder_sent_at, name, business_name, email, phone, gstin, status, document_checklist, due_day_of_month, auto_remind, last_reminder_sent')
             .order('client_key');
           if (error) throw error;
           if (!data.length) return null;
@@ -446,4 +503,4 @@ function getStorageType() {
   return 'local';
 }
 
-module.exports = { readState, writeState, readClientsForCa, readClientsForReminders, readSettingsForCa, writeSettingsForCa, writeClientsForCa, insertClientsForCa, readActivityLogs, insertActivityLog, getStorageType, configureSupabase };
+module.exports = { readState, writeState, readClientsForCa, readClientsForReminders, readSettingsForCa, writeSettingsForCa, writeClientsForCa, updateClientsForCa, mergeClientUpdates, insertClientsForCa, readActivityLogs, insertActivityLog, getStorageType, configureSupabase };

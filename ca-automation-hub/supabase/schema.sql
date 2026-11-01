@@ -9,6 +9,10 @@ create table if not exists public.clients (
   document_checklist jsonb not null default '[]'::jsonb,
   ca_id text,
   upload_token text,
+  notification_channel text check (notification_channel in ('email_only', 'whatsapp_only', 'both', 'escalation')),
+  whatsapp_phone text not null default '',
+  reminder_count integer not null default 0 check (reminder_count >= 0),
+  first_reminder_sent_at timestamptz,
   due_day_of_month integer not null default 5 check (due_day_of_month between 1 and 31),
   auto_remind boolean not null default true,
   last_reminder_sent timestamptz
@@ -24,6 +28,21 @@ alter table public.clients add column if not exists status text not null default
 alter table public.clients add column if not exists document_checklist jsonb not null default '[]'::jsonb;
 alter table public.clients add column if not exists ca_id text;
 alter table public.clients add column if not exists upload_token text;
+alter table public.clients add column if not exists notification_channel text;
+alter table public.clients add column if not exists whatsapp_phone text not null default '';
+alter table public.clients add column if not exists reminder_count integer not null default 0;
+alter table public.clients add column if not exists first_reminder_sent_at timestamptz;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'clients_notification_channel_check'
+      and conrelid = 'public.clients'::regclass
+  ) then
+    alter table public.clients add constraint clients_notification_channel_check
+      check (notification_channel is null or notification_channel in ('email_only', 'whatsapp_only', 'both', 'escalation'));
+  end if;
+end $$;
 alter table public.clients add column if not exists due_day_of_month integer not null default 5;
 alter table public.clients add column if not exists auto_remind boolean not null default true;
 alter table public.clients add column if not exists last_reminder_sent timestamptz;
