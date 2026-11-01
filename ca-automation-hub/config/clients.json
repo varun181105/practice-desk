@@ -23,7 +23,8 @@
         "title": "Purchase Invoices",
         "submitted": false
       }
-    ]
+    ],
+    "uploadToken": "ee0abe17e45fae9d362794299d510a209915fd4181cc796e5d3b3af139414865"
   },
   {
     "id": "client-2",
@@ -39,7 +40,8 @@
         "title": "Bank Statement (PDF) Only",
         "submitted": false
       }
-    ]
+    ],
+    "uploadToken": "6ccdeebc281ffaefb495e06a4f121431325dc613ad56318b69f16f065066db08"
   },
   {
     "id": "client-3",
@@ -60,6 +62,7 @@
         "title": "Bank Statement (PDF)",
         "submitted": true
       }
-    ]
+    ],
+    "uploadToken": "c9ada2e85e2ad4023b7406d714f32f467342569a3d6d11886ef672bd44a26a5e"
   }
 ]
