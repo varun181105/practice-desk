@@ -1,0 +1,65 @@
+[
+  {
+    "id": "client-1",
+    "name": "Varun Kumar",
+    "businessName": "Rupinder Logistics & Supply",
+    "email": "varun@rupinderlogistics.com",
+    "phone": "+91 98765 43210",
+    "gstin": "03AAAAA1234A1Z5",
+    "status": "Pending",
+    "documentChecklist": [
+      {
+        "id": "sales_reg",
+        "title": "Sales Register",
+        "submitted": false
+      },
+      {
+        "id": "bank_stmt",
+        "title": "Bank Statement (PDF)",
+        "submitted": false
+      },
+      {
+        "id": "purchase_inv",
+        "title": "Purchase Invoices",
+        "submitted": false
+      }
+    ]
+  },
+  {
+    "id": "client-2",
+    "name": "Amit Sharma",
+    "businessName": "Sharma Retail Electronics",
+    "email": "amit@sharmaelec.com",
+    "phone": "+91 98123 45678",
+    "gstin": "03BBBBB5678B1Z2",
+    "status": "Partially Submitted",
+    "documentChecklist": [
+      {
+        "id": "bank_stmt",
+        "title": "Bank Statement (PDF) Only",
+        "submitted": false
+      }
+    ]
+  },
+  {
+    "id": "client-3",
+    "name": "Rajesh Verma",
+    "businessName": "Tricity Auto Parts",
+    "email": "rajesh@tricityauto.in",
+    "phone": "+91 98999 11122",
+    "gstin": "03CCCCC9999C1Z8",
+    "status": "Completed",
+    "documentChecklist": [
+      {
+        "id": "sales_reg",
+        "title": "Sales Register",
+        "submitted": true
+      },
+      {
+        "id": "bank_stmt",
+        "title": "Bank Statement (PDF)",
+        "submitted": true
+      }
+    ]
+  }
+]

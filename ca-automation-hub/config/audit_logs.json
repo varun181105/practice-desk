@@ -1,0 +1,10 @@
+[
+  {
+    "id": "audit_001",
+    "timestamp": "2026-10-23T10:00:00.000Z",
+    "eventType": "SYSTEM_STARTUP",
+    "clientId": null,
+    "clientName": "System",
+    "details": "CA Automation Hub initialized with Basic Auth and Activity Logging."
+  }
+]

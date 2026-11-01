@@ -1,0 +1,31 @@
+{
+  "name": "ca-automation-hub",
+  "version": "1.0.0",
+  "description": "Self-hosted client compliance and document collection for CA practices",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "@supabase/supabase-js": "^2.57.4",
+    "axios": "^1.20.0",
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "google-spreadsheet": "^5.3.0",
+    "mongodb": "^6.8.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^7.0.13",
+    "pg": "^8.13.0",
+    "xlsx": "^0.18.5"
+  }
+}

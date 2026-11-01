@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#153a59">
+    <title>Client Document Portal | Practice Desk</title>
+    <style>
+        :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#24394c;background:#f3f6f8;font-synthesis:none;text-rendering:optimizeLegibility}
+        *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 15px}.card{width:min(100%,510px);background:white;border:1px solid #e4eaf0;border-radius:16px;overflow:hidden;box-shadow:0 16px 50px #17344d0e}
+        .head{padding:25px 27px 22px;background:#153a59;color:white}.brand{display:flex;align-items:center;gap:11px}.mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#c69c58;color:#18334c;font-family:Georgia,serif;font-weight:800}.brand-caption{font-size:9px;letter-spacing:.15em;color:#b6c8d8;font-weight:750}
+        h1{font-family:Georgia,"Times New Roman",serif;font-size:23px;font-weight:500;margin:21px 0 5px}.business-subtitle{font-size:11px;color:#b6c8d8;margin:0}.gstin{display:inline-block;margin-top:13px;padding:6px 9px;background:#ffffff12;border:1px solid #ffffff20;border-radius:6px;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:#d5e1eb}
+        main{padding:24px 27px 26px}.intro h2{font-size:13px;color:#1d3b54;margin:0}.intro p{font-size:10px;color:#8392a0;line-height:1.6;margin:6px 0 17px}
+        .list{display:grid;gap:10px}.doc-card{padding:13px;border:1px solid #e6ebef;border-radius:10px;background:#fbfcfd}.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.doc-title{font-size:11px;font-weight:750;color:#344d62}.badge{font-size:8px;font-weight:800;padding:5px 8px;border-radius:20px;background:#fbf2df;color:#9a701f}.badge.done{background:#e8f5ef;color:#328261}
+        .file-picker{position:relative;display:flex;align-items:center;justify-content:center;min-height:47px;margin-top:10px;padding:8px 10px;border:1px dashed #cbd6df;border-radius:7px;background:white;color:#687d90;font-size:9px;text-align:center;cursor:pointer}.file-picker:hover,.file-picker.selected{border-color:#537995;background:#f5f9fb}.file-picker input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.file-help{font-size:8px;color:#96a2ac;margin-top:7px}
+        .notice{display:none;padding:10px 11px;border-radius:7px;background:#fff3ef;border:1px solid #f0d8d0;color:#985648;font-size:9px;line-height:1.5;margin-bottom:13px}.notice.show{display:block}
+        .submit{width:100%;margin-top:17px;border:0;border-radius:8px;padding:12px;background:#173e5f;color:white;font-size:10px;font-weight:800;transition:.15s}.submit:hover{background:#245574}.submit:disabled{opacity:.5;cursor:not-allowed}.success{display:none;padding:30px 5px;text-align:center}.success-icon{width:46px;height:46px;margin:0 auto 15px;border-radius:50%;display:grid;place-items:center;background:#e9f5ef;color:#328261;font-size:23px}.success h2{font-family:Georgia,serif;font-size:21px;font-weight:500;color:#1c3b54;margin:0}.success p{font-size:10px;color:#7e8d9a;line-height:1.7}.error-state{display:none;text-align:center;padding:36px 12px}.error-state h2{font-family:Georgia,serif;font-size:20px;font-weight:500;color:#1c3b54}.error-state p{font-size:10px;line-height:1.7;color:#81909d}.loading{text-align:center;padding:45px 10px;color:#81909d;font-size:10px}.spinner{width:24px;height:24px;margin:0 auto 12px;border:2px solid #e4ebf0;border-top-color:#315e7c;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+        footer{border-top:1px solid #edf1f4;background:#fbfcfd;padding:13px 20px;text-align:center;color:#99a5ae;font-size:8px}
+        @media(max-width:500px){body{padding:0;background:#fff;display:block}.card{min-height:100vh;border:0;border-radius:0;box-shadow:none}.head{padding:21px 20px}.head h1{font-size:21px;margin-top:18px}main{padding:22px 20px}.file-picker{min-height:50px}}
+    </style>
+</head>
+<body>
+<article class="card">
+    <header class="head">
+        <div class="brand"><div class="mark">CA</div><div class="brand-caption">PRACTICE DESK · DOCUMENT PORTAL</div></div>
+        <h1 id="business-name">Client document portal</h1>
+        <p id="client-name" class="business-subtitle">Securely share requested documents with your CA.</p>
+        <span id="client-gstin" class="gstin">GSTIN: —</span>
+    </header>
+    <main>
+        <div id="loading-state" class="loading"><div class="spinner"></div>Preparing your document checklist…</div>
+        <section id="error-state" class="error-state"><h2>Portal link unavailable</h2><p>This link may be invalid. Please contact your CA and request a current document upload link.</p></section>
+        <section id="portal-content" hidden>
+            <div class="intro"><h2>Your requested documents</h2><p>Choose the files requested below. Accepted formats: PDF, JPG, PNG, or WebP. Maximum file size: 10 MB per document.</p></div>
+            <div id="notice" class="notice" role="alert"></div>
+            <form id="upload-form">
+                <div id="checklist-container" class="list"></div>
+                <button id="submit-btn" class="submit" type="submit" disabled>Submit selected documents</button>
+            </form>
+        </section>
+        <section id="success-state" class="success" aria-live="polite"><div class="success-icon">✓</div><h2>Documents received</h2><p id="success-message">Your files have been received. You can close this page now.</p></section>
+    </main>
+    <footer>Private document collection · Contact your CA if you need assistance.</footer>
+</article>
+<script>
+    const clientId = decodeURIComponent(window.location.pathname.split('/').pop() || '');
+    const uploads = {};
+    let clientData;
+    const maxFileSize = 10 * 1024 * 1024;
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+    function showNotice(message) {
+        const notice = document.getElementById('notice');
+        notice.textContent = message;
+        notice.classList.add('show');
+    }
+
+    async function initPortal() {
+        try {
+            const response = await fetch(`/api/clients/${encodeURIComponent(clientId)}`);
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Client link not found.');
+            clientData = data;
+            document.getElementById('business-name').textContent = clientData.businessName || clientData.name || 'Client document portal';
+            document.getElementById('client-name').textContent = `Hello ${clientData.name || 'there'}, please upload the documents requested by your CA.`;
+            document.getElementById('client-gstin').textContent = `GSTIN: ${clientData.gstin || 'Not provided'}`;
+            renderChecklist();
+            document.getElementById('loading-state').hidden = true;
+            document.getElementById('portal-content').hidden = false;
+        } catch (error) {
+            document.getElementById('loading-state').hidden = true;
+            document.getElementById('error-state').style.display = 'block';
+        }
+    }
+
+    function renderChecklist() {
+        const checklist = clientData.documentChecklist || [];
+        const container = document.getElementById('checklist-container');
+        if (!checklist.length) {
+            container.innerHTML = '<div class="doc-card"><div class="doc-title">No documents have been requested yet.</div></div>';
+            return;
+        }
+        container.innerHTML = checklist.map(item => `<div class="doc-card">
+            <div class="doc-head"><span class="doc-title">${escapeHtml(item.title || item.id)}</span><span class="badge ${item.submitted ? 'done' : ''}">${item.submitted ? 'Received' : 'Required'}</span></div>
+            ${item.submitted ? '' : `<label class="file-picker" data-file-label="${escapeHtml(item.id)}">Choose a file<input type="file" data-item-id="${escapeHtml(item.id)}" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"></label>`}
+        </div>`).join('');
+        updateSubmitState();
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
+    function updateSubmitState() {
+        document.getElementById('submit-btn').disabled = Object.keys(uploads).length === 0;
+    }
+
+    document.getElementById('checklist-container').addEventListener('change', event => {
+        const input = event.target;
+        if (!input.matches('input[type="file"]')) return;
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const itemId = input.dataset.itemId;
+        const label = input.closest('.file-picker');
+        if (!validTypes.includes(file.type) || file.size > maxFileSize) {
+            showNotice(file.size > maxFileSize ? 'Each file must be smaller than 10 MB.' : 'Please choose a PDF, JPG, PNG, or WebP file.');
+            input.value = '';
+            delete uploads[itemId];
+            label.textContent = 'Choose a file';
+            updateSubmitState();
+            return;
+        }
+        document.getElementById('notice').classList.remove('show');
+        const reader = new FileReader();
+        reader.onload = () => {
+            uploads[itemId] = { name: file.name, type: file.type, base64: String(reader.result).split(',')[1] };
+            label.classList.add('selected');
+            label.textContent = `✓ ${file.name}`;
+            updateSubmitState();
+        };
+        reader.onerror = () => showNotice('Could not read that file. Please try again.');
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = document.getElementById('submit-btn');
+        if (!Object.keys(uploads).length) return;
+        button.disabled = true;
+        button.textContent = 'Uploading your documents…';
+        document.getElementById('notice').classList.remove('show');
+        try {
+            const response = await fetch('/api/submit-documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ portalToken: clientData.portalToken, files: uploads })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || 'Upload could not be completed. Please try again.');
+            document.getElementById('portal-content').hidden = true;
+            document.getElementById('success-message').textContent = result.message || 'Your files have been received. You can close this page now.';
+            document.getElementById('success-state').style.display = 'block';
+        } catch (error) {
+            showNotice(error.message);
+            button.disabled = false;
+            button.textContent = 'Submit selected documents';
+        }
+    });
+
+    initPortal();
+</script>
+</body>
+</html>

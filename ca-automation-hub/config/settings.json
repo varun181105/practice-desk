@@ -1,0 +1,36 @@
+{
+  "reminders": {
+    "intervalDays": 2,
+    "autoRemindersEnabled": true,
+    "channels": ["whatsapp", "email"],
+    "nudgeSchedule": [
+      { "type": "Early Nudge", "daysBefore": 7 },
+      { "type": "Standard Nudge", "daysBefore": 3 },
+      { "type": "Final Alert", "daysBefore": 1 }
+    ]
+  },
+  "statutoryCalendar": [
+    { "id": "gst_r1", "label": "GST R1", "dueDay": 11, "frequency": "monthly" },
+    { "id": "gst_3b", "label": "GST 3B", "dueDay": 20, "frequency": "monthly" },
+    { "id": "adv_tax_q1", "label": "Advance Tax Q1", "dueDay": 15, "dueMonth": 6, "frequency": "yearly" },
+    { "id": "adv_tax_q2", "label": "Advance Tax Q2", "dueDay": 15, "dueMonth": 9, "frequency": "yearly" },
+    { "id": "adv_tax_q3", "label": "Advance Tax Q3", "dueDay": 15, "dueMonth": 12, "frequency": "yearly" },
+    { "id": "adv_tax_q4", "label": "Advance Tax Q4", "dueDay": 15, "dueMonth": 3, "frequency": "yearly" },
+    { "id": "itr_indiv", "label": "ITR (Individual)", "dueDay": 31, "dueMonth": 7, "frequency": "yearly" },
+    { "id": "itr_audit", "label": "ITR (Audit)", "dueDay": 31, "dueMonth": 10, "frequency": "yearly" }
+  ],
+  "firmName": "Practice Desk",
+  "auth": {
+    "enabled": true,
+    "firmPassword": "ca-secure-2026"
+  },
+  "googleSheets": {
+    "spreadsheetId": "YOUR_SPREADSHEET_ID_HERE",
+    "sheetName": "ClientStatus",
+    "parsedDocsSheetName": "ParsedDocuments"
+  },
+  "n8n": {
+    "webhookUrl": ""
+  },
+  "baseUrl": "http://localhost:3000"
+}

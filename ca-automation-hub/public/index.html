@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102b46">
+    <title>Practice Desk | CA Client Compliance</title>
+    <style>
+        :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#182b3d;background:#f4f7fa;font-synthesis:none;text-rendering:optimizeLegibility}
+        *{box-sizing:border-box}body{margin:0;min-width:320px}button,input,select{font:inherit}button{cursor:pointer}
+        .shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:246px;padding:25px 16px;background:#102b46;color:#d6e2ee;display:flex;flex-direction:column;z-index:2}
+        .brand{display:flex;align-items:center;gap:12px;padding:3px 9px 28px;border-bottom:1px solid #ffffff1b}.brand-mark{width:38px;height:38px;border-radius:12px;background:#c69c58;color:#132d45;display:grid;place-items:center;font-family:Georgia,serif;font-weight:800;font-size:19px}
+        .brand-name{font-size:14px;font-weight:750;letter-spacing:.01em;color:white}.brand-caption{font-size:10px;color:#9fb2c6;margin-top:3px}
+        .nav-label{padding:24px 11px 9px;color:#8299ae;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.nav{display:grid;gap:5px}
+        .nav button{border:0;background:transparent;color:#b7c7d7;text-align:left;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;font-size:12px;font-weight:650}
+        .nav button:hover,.nav button.active{background:#ffffff13;color:#fff}.nav-icon{width:17px;text-align:center;font-size:15px}.side-bottom{margin-top:auto;border-top:1px solid #ffffff1b;padding:15px 9px 0;font-size:10px;line-height:1.6;color:#91a6ba}
+        .side-bottom strong{display:block;color:#dae4ed;font-size:11px;font-weight:650}.main{margin-left:246px;min-height:100vh}.topbar{height:66px;background:#fff;border-bottom:1px solid #e4eaf0;display:flex;align-items:center;justify-content:space-between;padding:0 34px}
+        .crumb{font-size:11px;color:#8493a1}.crumb strong{color:#334a60;font-weight:700}.top-actions{display:flex;align-items:center;gap:14px}.connection{display:flex;align-items:center;gap:7px;color:#637588;font-size:10px}.dot{width:7px;height:7px;background:#35a779;border-radius:50%}
+        .user-avatar{width:32px;height:32px;border-radius:50%;background:#eaf0f5;color:#23425f;display:grid;place-items:center;font-size:11px;font-weight:800}
+        .content{max-width:1370px;margin:auto;padding:32px 34px 50px}.view{display:none}.view.active{display:block}.page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px}
+        .eyebrow{margin:0 0 7px;color:#9b7840;font-size:9px;text-transform:uppercase;font-weight:850;letter-spacing:.16em}.page-heading h1{font-family:Georgia,"Times New Roman",serif;font-size:27px;letter-spacing:-.03em;font-weight:500;color:#142e47;margin:0}.subtitle{font-size:11px;color:#8492a0;margin:7px 0 0}
+        .button{border:1px solid #dce4eb;background:#fff;color:#40566b;border-radius:8px;padding:9px 13px;font-size:10px;font-weight:700;transition:.15s}.button:hover{border-color:#b7c7d4;background:#f8fafb}.button-primary{background:#163b5a;color:#fff;border-color:#163b5a}.button-primary:hover{background:#214d70;border-color:#214d70}.button-gold{background:#c69c58;color:#162f48;border-color:#c69c58}.button:disabled{opacity:.55;cursor:wait}
+        .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:19px}.metric{position:relative;background:#fff;border:1px solid #e5ebf0;border-radius:11px;padding:17px 18px;overflow:hidden}.metric:after{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:#d9e5ed}.metric:nth-child(2):after{background:#4ba77b}.metric:nth-child(3):after{background:#d6a651}.metric:nth-child(4):after{background:#7c95ad}
+        .metric-label{font-size:9px;color:#778897;font-weight:800;text-transform:uppercase;letter-spacing:.1em}.metric-value{font-family:Georgia,serif;font-size:29px;color:#17334e;margin-top:8px;line-height:1}.metric-note{font-size:9px;color:#9aa6b1;margin-top:7px}
+        .panel{background:#fff;border:1px solid #e5ebf0;border-radius:11px;overflow:hidden}.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 19px;border-bottom:1px solid #edf1f4}.panel-title{margin:0;color:#18344e;font-size:12px;font-weight:800}.panel-caption{color:#8b99a6;font-size:9px;margin-top:4px}
+        .tools{display:flex;gap:8px;align-items:center}.search{width:205px;border:1px solid #e1e7ec;border-radius:7px;padding:8px 10px;font-size:10px;outline:none;color:#334b60}.search:focus,.field:focus{border-color:#829db4;box-shadow:0 0 0 3px #dbe7ef}
+        .select{border:1px solid #e1e7ec;border-radius:7px;padding:8px 10px;font-size:10px;color:#53697c;background:#fff}
+        .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:750px}th{background:#f9fbfc;color:#8b99a6;text-transform:uppercase;letter-spacing:.09em;font-size:8px;text-align:left;padding:11px 17px;font-weight:850}td{padding:13px 17px;border-top:1px solid #eff2f5;vertical-align:middle;font-size:10px;color:#52677a}tbody tr:hover{background:#fbfcfd}.client-name{color:#203b54;font-weight:750;font-size:10px}.client-meta{color:#91a0ad;font-size:9px;margin-top:4px}.gstin{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#617689;font-size:9px}
+        .status{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:5px 8px;font-weight:750;font-size:8px;white-space:nowrap}.status:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}.status-completed{color:#29835f;background:#e8f5ef}.status-pending{color:#a06f20;background:#fbf2df}.status-partial{color:#587d9b;background:#edf4f9}
+        .doc-progress{min-width:80px}.progress-copy{font-size:8px;color:#82909d;margin-bottom:5px}.progress-track{height:4px;background:#edf1f4;border-radius:4px;overflow:hidden}.progress-bar{height:100%;background:#56a580;border-radius:4px}
+        .row-actions{display:flex;justify-content:flex-end;gap:6px;white-space:nowrap}.action-link{border:0;background:#f0f4f7;color:#425e75;padding:7px 9px;border-radius:6px;text-decoration:none;font-size:9px;font-weight:750}.action-link:hover{background:#e5edf3}.action-link.primary{background:#eaf0f5;color:#234b6a}
+        .empty{padding:45px 20px;text-align:center;color:#8392a0;font-size:11px}.empty strong{display:block;color:#304c65;font-size:13px;margin-bottom:5px}.alert{display:none;margin-bottom:16px;padding:11px 13px;background:#fff4f2;border:1px solid #f1d6d1;border-radius:8px;color:#9a5145;font-size:10px}.alert.show{display:block}
+        .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.setting-card{background:#fff;border:1px solid #e5ebf0;border-radius:11px;padding:20px}.setting-card h2{margin:0;color:#18344e;font-size:12px}.setting-card>p{font-size:10px;color:#8897a4;margin:6px 0 18px}.field-row{margin:0 0 14px}.field-row label{display:block;margin-bottom:6px;font-size:9px;font-weight:800;color:#596f82}.field{width:100%;padding:9px 10px;border:1px solid #e0e7ec;border-radius:7px;font-size:10px;color:#344c61;outline:none}.field-help{font-size:9px;color:#9aa6b0;margin-top:5px}.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid #edf1f4;color:#51687b;font-size:10px}
+        .calendar-list{display:grid;gap:0}.calendar-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #edf1f4;padding:12px 0}.calendar-item:first-child{border-top:0}.calendar-name{font-size:10px;color:#3b5368;font-weight:750}.calendar-date{font-size:9px;color:#909eaa;margin-top:4px}.due-tag{padding:5px 8px;border-radius:20px;background:#f2f5f7;color:#61778a;font-size:8px;font-weight:800;white-space:nowrap}
+        .audit-list{padding:2px 19px}.audit-item{display:grid;grid-template-columns:115px 1fr;gap:15px;padding:14px 0;border-bottom:1px solid #eff2f5}.audit-item:last-child{border:0}.audit-time{font-size:9px;color:#8b99a6}.audit-detail{font-size:10px;color:#405970}.audit-client{font-size:9px;color:#9aa6b0;margin-top:4px}
+        .toast{position:fixed;bottom:22px;right:22px;z-index:5;background:#163b5a;color:white;padding:12px 16px;border-radius:8px;box-shadow:0 8px 28px #18344e2a;font-size:10px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:translateY(0)}
+        .heading-actions{display:flex;gap:8px;flex-wrap:wrap}dialog{width:min(100% - 28px,520px);padding:0;border:1px solid #dfe7ed;border-radius:13px;box-shadow:0 25px 90px #102b4644;color:#24394c}dialog::backdrop{background:#102b4666;backdrop-filter:blur(2px)}.dialog-head{display:flex;justify-content:space-between;align-items:center;padding:18px 21px;border-bottom:1px solid #edf1f4}.dialog-head h2{font-family:Georgia,serif;font-weight:500;color:#18344e;margin:0;font-size:19px}.dialog-close{border:0;background:none;color:#738596;font-size:20px}.dialog-body{padding:17px 21px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.field-row.full{grid-column:1/-1}.dialog-error{font-size:9px;color:#a44d43;min-height:14px;margin:2px 0 8px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:9px}
+        [hidden]{display:none!important}.access-restricted{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f7fa}.access-card{width:min(100%,420px);padding:30px;background:#fff;border:1px solid #e1e8ed;border-radius:10px;text-align:center;box-shadow:0 12px 40px #18344e12}.access-card h1{margin:0;color:#142e47;font:500 27px Georgia,serif}.access-card p{margin:10px 0 20px;color:#718293;font-size:13px;line-height:1.6}.access-card .button{font-size:12px;padding:11px 16px}.access-message{min-height:20px;color:#9a5145;font-size:11px;margin:0 0 12px}
+        @media(max-width:900px){.sidebar{width:205px}.main{margin-left:205px}.content{padding:26px 20px}.topbar{padding:0 20px}.metric-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:650px){.sidebar{position:static;width:auto;height:auto;padding:12px 14px}.brand{padding:2px 5px 11px;border:0}.brand-mark{width:32px;height:32px}.nav-label,.side-bottom{display:none}.nav{grid-template-columns:repeat(3,1fr);gap:4px;margin-top:9px}.nav button{justify-content:center;padding:9px 4px;font-size:9px}.nav-icon{display:none}.main{margin:0}.topbar{height:48px;padding:0 15px}.connection{display:none}.content{padding:22px 14px 35px}.page-heading{align-items:flex-start;flex-direction:column;margin-bottom:17px}.page-heading h1{font-size:24px}.metric-grid{gap:8px}.metric{padding:13px}.metric-value{font-size:25px}.panel-header{align-items:flex-start;flex-direction:column}.tools{width:100%;flex-wrap:wrap}.search{flex:1;min-width:150px}.settings-grid{grid-template-columns:1fr}.audit-item{grid-template-columns:90px 1fr}}
+    </style>
+</head>
+<body>
+<section class="access-restricted" id="access-restricted" role="status" aria-live="polite">
+    <div class="access-card"><h1>Access Restricted</h1><p id="access-message">Sign in with an authorized Practice Desk account.</p><div class="access-message" id="access-error"></div><button class="button button-primary" id="restricted-google-sign-in" type="button">Sign in with Google</button><p>Contact your administrator if you need workspace access.</p></div>
+</section>
+<div class="shell" id="workspace-shell" hidden>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">CA</div>
+            <div><div class="brand-name" id="firm-name">Practice Desk</div><div class="brand-caption">CLIENT COMPLIANCE</div></div>
+        </div>
+        <div class="nav-label">Workspace</div>
+        <nav class="nav" aria-label="Main navigation">
+            <button class="active" data-view="dashboard"><span class="nav-icon">▦</span>Overview</button>
+            <button data-view="audit"><span class="nav-icon">◷</span>Activity log</button>
+            <button data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
+        </nav>
+        <div class="side-bottom"><strong>Compliance, in one place</strong>Client documents and statutory deadlines, organized for your practice.</div>
+    </aside>
+    <div class="main">
+        <header class="topbar"><div class="crumb">Workspace &nbsp;/&nbsp; <strong id="breadcrumb">Overview</strong></div><div class="top-actions"><span class="connection"><span class="dot"></span> Workspace connected</span><button class="button" id="google-sign-in">Sign in with Google</button><span class="user-avatar" id="user-avatar">CA</span></div></header>
+        <main class="content">
+            <div id="dashboard-view" class="view active">
+                <div class="page-heading"><div><p class="eyebrow">Practice overview</p><h1>Good work starts with clarity.</h1><p class="subtitle" id="today-label">Your client compliance at a glance.</p></div><div class="heading-actions"><button class="button" id="add-client-button">＋ Add client</button><button class="button" id="import-clients-button">Import Clients (.xlsx / .csv)</button><input id="import-clients-file" type="file" accept=".xlsx,.csv" hidden><button class="button button-primary" id="reminder-button">Send document reminders</button></div></div>
+                <div id="dashboard-error" class="alert" role="alert"></div>
+                <section class="metric-grid" aria-label="Client summary">
+                    <article class="metric"><div class="metric-label">Total clients</div><div class="metric-value" id="total-clients">—</div><div class="metric-note">Active in this workspace</div></article>
+                    <article class="metric"><div class="metric-label">Documents complete</div><div class="metric-value" id="completed-clients">—</div><div class="metric-note">All requested items received</div></article>
+                    <article class="metric"><div class="metric-label">Need attention</div><div class="metric-value" id="pending-clients">—</div><div class="metric-note">Clients with outstanding items</div></article>
+                    <article class="metric"><div class="metric-label">Documents outstanding</div><div class="metric-value" id="pending-documents">—</div><div class="metric-note">Across all client checklists</div></article>
+                </section>
+                <section class="panel">
+                    <div class="panel-header"><div><h2 class="panel-title">Client compliance</h2><div class="panel-caption">Track requests, review progress, and share secure upload links.</div></div>
+                        <div class="tools"><input class="search" id="client-search" type="search" placeholder="Search clients or GSTIN" aria-label="Search clients"><select class="select" id="status-filter" aria-label="Filter by status"><option value="all">All statuses</option><option value="Pending">Pending</option><option value="Partially Submitted">In progress</option><option value="Completed">Completed</option></select></div>
+                    </div>
+                    <div class="table-wrap"><table><thead><tr><th>Client</th><th>Business / GSTIN</th><th>Collection progress</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody id="client-table-body"><tr><td colspan="5" class="empty">Loading your client workspace…</td></tr></tbody></table></div>
+                </section>
+            </div>
+            <div id="audit-view" class="view">
+                <div class="page-heading"><div><p class="eyebrow">Record of activity</p><h1>Activity log</h1><p class="subtitle">A clear timeline of document submissions and reminder activity.</p></div></div>
+                <div id="audit-error" class="alert" role="alert"></div>
+                <section class="panel"><div class="panel-header"><div><h2 class="panel-title">Recent activity</h2><div class="panel-caption">Latest events in your workspace.</div></div></div><div id="audit-log-list" class="audit-list"><div class="empty">Loading activity…</div></div></section>
+            </div>
+            <div id="settings-view" class="view">
+                <div class="page-heading"><div><p class="eyebrow">Workspace preferences</p><h1>Settings</h1><p class="subtitle">Configure your practice identity, reminders, and compliance calendar.</p></div></div>
+                <div id="settings-error" class="alert" role="alert"></div>
+                <div class="settings-grid">
+                    <section class="setting-card"><h2>Practice & reminders</h2><p>Keep reminder automation aligned with how your firm works.</p>
+                        <div class="field-row"><label for="firm-name-input">Practice name</label><input class="field" id="firm-name-input" maxlength="70" placeholder="Your CA practice"></div>
+                        <div class="field-row"><label for="reminder-interval">Reminder interval (days)</label><input class="field" id="reminder-interval" type="number" min="1" max="90"></div>
+                        <div class="field-row"><label for="webhook-url">Reminder workflow URL</label><input class="field" id="webhook-url" type="url" placeholder="https://…"><div class="field-help">Optional. Connect your n8n workflow to deliver reminders.</div></div>
+                        <div class="field-row"><label for="base-url">Public portal URL</label><input class="field" id="base-url" type="url" placeholder="https://your-domain.example"><div class="field-help">Used when generating upload links for reminder workflows.</div></div>
+                        <div class="toggle-row"><span>Automatic reminders enabled</span><input id="reminders-enabled" type="checkbox" aria-label="Automatic reminders enabled"></div>
+                        <button class="button button-primary" id="save-settings">Save preferences</button><span id="save-message" class="field-help" role="status"></span>
+                    </section>
+                    <section class="setting-card"><h2>Statutory calendar</h2><p>Upcoming due dates calculated from your configured calendar.</p><div id="statutory-calendar-list" class="calendar-list"><div class="empty">Loading calendar…</div></div></section>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<dialog id="client-dialog" aria-labelledby="client-dialog-title">
+    <form id="client-form">
+        <div class="dialog-head"><h2 id="client-dialog-title">Add a client</h2><button type="button" class="dialog-close" id="close-client-dialog" aria-label="Close">×</button></div>
+        <div class="dialog-body">
+            <div class="form-grid">
+                <div class="field-row"><label for="new-client-name">Contact name *</label><input class="field" id="new-client-name" name="name" required maxlength="100"></div>
+                <div class="field-row"><label for="new-business-name">Business name *</label><input class="field" id="new-business-name" name="businessName" required maxlength="150"></div>
+                <div class="field-row"><label for="new-client-email">Email</label><input class="field" id="new-client-email" name="email" type="email" maxlength="150"></div>
+                <div class="field-row"><label for="new-client-phone">Phone</label><input class="field" id="new-client-phone" name="phone" type="tel" maxlength="40"></div>
+                <div class="field-row full"><label for="new-client-gstin">GSTIN</label><input class="field" id="new-client-gstin" name="gstin" maxlength="15" autocapitalize="characters"></div>
+                <div class="field-row full"><label for="new-document-titles">Requested documents * (one per line)</label><textarea class="field" id="new-document-titles" rows="4" required>Sales Register
+Bank Statement (PDF)
+Purchase Invoices</textarea></div>
+            </div>
+            <div id="client-form-error" class="dialog-error" role="alert"></div>
+            <div class="dialog-actions"><button type="button" class="button" id="cancel-client">Cancel</button><button type="submit" class="button button-primary" id="create-client">Create client</button></div>
+        </div>
+    </form>
+</dialog>
+<div id="toast" class="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const authKey = 'firmPassword';
+    let clients = [];
+    let settings = null;
+    let toastTimer;
+    let authClient;
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
+    async function apiFetch(url, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        const { data } = authClient ? await authClient.auth.getSession() : { data: { session: null } };
+        const accessToken = data.session?.access_token;
+        headers.Authorization = `Bearer ${accessToken || localStorage.getItem(authKey) || 'ca-secure-2026'}`;
+        const response = await fetch(url, { ...options, headers });
+        if (authClient && [401, 403, 503].includes(response.status)) {
+            const result = await response.clone().json().catch(() => ({}));
+            showAccessRestricted(result.error || 'Workspace access could not be verified. Contact your administrator.');
+            await authClient.auth.signOut({ scope: 'local' });
+        }
+        return response;
+    }
+
+    async function signInWithGoogle() {
+        if (!authClient) throw new Error('Google sign-in is unavailable. Configure Supabase URL and anon key first.');
+        const { error } = await authClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: `${window.location.origin}/`, queryParams: { prompt: 'select_account' } }
+        });
+        if (error) throw error;
+    }
+
+    function showAccessRestricted(message) {
+        clients = [];
+        settings = null;
+        document.getElementById('workspace-shell').hidden = true;
+        document.getElementById('access-restricted').hidden = false;
+        document.getElementById('access-message').textContent = 'Sign in with an authorized Practice Desk account.';
+        document.getElementById('access-error').textContent = message || '';
+        ['total-clients', 'completed-clients', 'pending-clients', 'pending-documents'].forEach(id => {
+            document.getElementById(id).textContent = '—';
+        });
+        document.getElementById('client-table-body').innerHTML = '<tr><td colspan="5" class="empty">Access restricted</td></tr>';
+        document.getElementById('audit-log-list').replaceChildren();
+        ['firm-name-input', 'webhook-url', 'base-url'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('statutory-calendar-list').replaceChildren();
+        if (clientDialog?.open) clientDialog.close();
+    }
+
+    function showWorkspace() {
+        document.getElementById('access-restricted').hidden = true;
+        document.getElementById('access-error').textContent = '';
+        document.getElementById('workspace-shell').hidden = false;
+    }
+
+    async function verifyWorkspaceSession(session) {
+        if (!session?.access_token) {
+            sessionStorage.removeItem('ca_id');
+            showAccessRestricted();
+            return false;
+        }
+        const response = await fetch('/api/auth/session', {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.authorized) {
+            sessionStorage.removeItem('ca_id');
+            showAccessRestricted(data.error || 'Access Restricted. Contact Administrator.');
+            return false;
+        }
+        sessionStorage.setItem('ca_id', data.caId);
+        document.getElementById('user-avatar').textContent = (data.email || 'CA').slice(0, 2).toUpperCase();
+        document.getElementById('google-sign-in').textContent = 'Google account connected';
+        showWorkspace();
+        return true;
+    }
+
+    async function initializeAuth() {
+        const response = await fetch('/api/auth/config');
+        const config = await response.json();
+        if (!config.requireOAuth) {
+            showWorkspace();
+            return true;
+        }
+        if (!config.supabaseUrl || !config.supabaseAnonKey || !window.supabase?.createClient) {
+            showAccessRestricted('Sign-in is unavailable. Contact your administrator.');
+            return false;
+        }
+        authClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        authClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                sessionStorage.removeItem('ca_id');
+                showAccessRestricted();
+            } else if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event) && session) {
+                verifyWorkspaceSession(session).then(authorized => { if (authorized) loadDashboard(); }).catch(() => showAccessRestricted('Unable to verify workspace access. Contact your administrator.'));
+            }
+        });
+        const { data } = await authClient.auth.getSession();
+        return verifyWorkspaceSession(data.session);
+    }
+
+    async function requestJson(url, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        if (options.body) headers['Content-Type'] = 'application/json';
+        const response = await apiFetch(url, { ...options, headers });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || `Request failed (${response.status}).`);
+        }
+        return data;
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    function showError(id, message) {
+        const element = document.getElementById(id);
+        element.textContent = message;
+        element.classList.add('show');
+    }
+
+    function currentStatus(client) {
+        const checklist = client.documentChecklist || [];
+        const count = checklist.filter(item => item.submitted).length;
+        if (count === checklist.length) return 'Completed';
+        return count ? 'Partially Submitted' : 'Pending';
+    }
+
+    function renderClients() {
+        const query = document.getElementById('client-search').value.trim().toLowerCase();
+        const status = document.getElementById('status-filter').value;
+        const filtered = clients.filter(client => {
+            const match = [client.name, client.businessName, client.gstin, client.email].some(value => String(value || '').toLowerCase().includes(query));
+            return match && (status === 'all' || currentStatus(client) === status);
+        });
+        const body = document.getElementById('client-table-body');
+        if (!filtered.length) {
+            body.innerHTML = `<tr><td colspan="5" class="empty"><strong>${clients.length ? 'No matching clients' : 'Your client list is ready'}</strong>${clients.length ? 'Try another search or status filter.' : 'Add client records in config/clients.json to start collecting documents.'}</td></tr>`;
+            return;
+        }
+        body.innerHTML = filtered.map(client => {
+            const checklist = client.documentChecklist || [];
+            const received = checklist.filter(item => item.submitted).length;
+            const clientStatus = currentStatus(client);
+            const statusClass = clientStatus === 'Completed' ? 'status-completed' : clientStatus === 'Pending' ? 'status-pending' : 'status-partial';
+            const progress = checklist.length ? Math.round(received / checklist.length * 100) : 100;
+            const portal = `/upload/${encodeURIComponent(client.uploadToken)}`;
+            const submittedItem = checklist.find(item => item.submitted && item.storedAs);
+            return `<tr>
+                <td><div class="client-name">${escapeHtml(client.name || 'Client')}</div><div class="client-meta">${escapeHtml(client.email || 'Contact details not provided')}</div></td>
+                <td><div class="client-name">${escapeHtml(client.businessName || '—')}</div><div class="client-meta gstin">${escapeHtml(client.gstin || 'GSTIN not provided')}</div></td>
+                <td><div class="doc-progress"><div class="progress-copy">${received} of ${checklist.length} documents received</div><div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div></div></td>
+                <td><span class="status ${statusClass}">${escapeHtml(clientStatus === 'Partially Submitted' ? 'In progress' : clientStatus)}</span></td>
+                <td><div class="row-actions"><button class="action-link" data-copy="${escapeHtml(portal)}">Copy link</button><a class="action-link primary" href="${escapeHtml(portal)}" target="_blank" rel="noopener">Client portal ↗</a>${submittedItem ? `<button class="action-link" data-download-client="${escapeHtml(client.id)}" data-download-item="${escapeHtml(submittedItem.id)}">Latest file</button>` : ''}</div></td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function loadDashboard() {
+        const error = document.getElementById('dashboard-error');
+        error.classList.remove('show');
+        try {
+            const [clientData, stats] = await Promise.all([requestJson('/api/clients'), requestJson('/api/stats')]);
+            if (!Array.isArray(clientData)) throw new Error('The clients API returned an invalid response.');
+            clients = clientData;
+            document.getElementById('total-clients').textContent = stats.total;
+            document.getElementById('completed-clients').textContent = stats.completed;
+            document.getElementById('pending-clients').textContent = stats.pending;
+            document.getElementById('pending-documents').textContent = clients.reduce((sum, client) => sum + (client.documentChecklist || []).filter(item => !item.submitted).length, 0);
+            renderClients();
+        } catch (error) {
+            showError('dashboard-error', `${error.message} Check the server and try again.`);
+            document.getElementById('client-table-body').innerHTML = '<tr><td colspan="5" class="empty"><strong>Could not load client data</strong>Use the retry option after checking your connection.</td></tr>';
+            const retry = document.createElement('button');
+            retry.className = 'button';
+            retry.textContent = 'Retry';
+            retry.onclick = loadDashboard;
+            document.getElementById('dashboard-error').append(' ', retry);
+        }
+    }
+
+    async function loadAudit() {
+        const container = document.getElementById('audit-log-list');
+        document.getElementById('audit-error').classList.remove('show');
+        try {
+            const logs = await requestJson('/api/audit-logs');
+            container.innerHTML = logs.length ? logs.map(log => {
+                const date = new Date(log.timestamp);
+                return `<div class="audit-item"><div class="audit-time">${escapeHtml(Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleString())}</div><div><div class="audit-detail">${escapeHtml(log.details || log.eventType || 'Workspace event')}</div><div class="audit-client">${escapeHtml(log.clientName || 'System')}</div></div></div>`;
+            }).join('') : '<div class="empty">No activity has been recorded yet.</div>';
+        } catch (error) {
+            showError('audit-error', error.message);
+            container.innerHTML = '';
+        }
+    }
+
+    async function loadSettings() {
+        const error = document.getElementById('settings-error');
+        error.classList.remove('show');
+        try {
+            settings = await requestJson('/api/settings');
+            document.getElementById('firm-name-input').value = settings.firmName || '';
+            document.getElementById('reminder-interval').value = settings.reminders?.intervalDays || 2;
+            document.getElementById('webhook-url').value = settings.n8n?.webhookUrl || '';
+            document.getElementById('base-url').value = settings.baseUrl || '';
+            document.getElementById('reminders-enabled').checked = Boolean(settings.reminders?.autoRemindersEnabled);
+            document.getElementById('firm-name').textContent = settings.firmName || 'Practice Desk';
+            const dates = settings.computedDueDates || [];
+            document.getElementById('statutory-calendar-list').innerHTML = dates.length ? dates.map(item => `<div class="calendar-item"><div><div class="calendar-name">${escapeHtml(item.label)}</div><div class="calendar-date">${escapeHtml(item.dueDate)}</div></div><span class="due-tag">${item.daysRemaining === 0 ? 'Due today' : `${escapeHtml(item.daysRemaining)} days left`}</span></div>`).join('') : '<div class="empty">No statutory dates configured.</div>';
+        } catch (error) {
+            showError('settings-error', error.message);
+        }
+    }
+
+    async function saveSettings() {
+        if (!settings) return;
+        const button = document.getElementById('save-settings');
+        const message = document.getElementById('save-message');
+        const interval = Number(document.getElementById('reminder-interval').value);
+        if (!Number.isInteger(interval) || interval < 1 || interval > 90) {
+            message.textContent = 'Choose an interval between 1 and 90 days.';
+            return;
+        }
+        button.disabled = true;
+        message.textContent = 'Saving…';
+        const updated = { ...settings };
+        updated.firmName = document.getElementById('firm-name-input').value.trim();
+        updated.reminders = { ...updated.reminders, intervalDays: interval, autoRemindersEnabled: document.getElementById('reminders-enabled').checked };
+        updated.n8n = { ...updated.n8n, webhookUrl: document.getElementById('webhook-url').value.trim() };
+        updated.baseUrl = document.getElementById('base-url').value.trim();
+        delete updated.computedDueDates;
+        try {
+            await requestJson('/api/settings', { method: 'POST', body: JSON.stringify(updated) });
+            settings = updated;
+            document.getElementById('firm-name').textContent = updated.firmName || 'Practice Desk';
+            message.textContent = 'Preferences saved.';
+            showToast('Workspace settings saved.');
+        } catch (error) {
+            message.textContent = error.message;
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    document.querySelectorAll('.nav button').forEach(button => button.addEventListener('click', () => {
+        const view = button.dataset.view;
+        document.querySelectorAll('.nav button').forEach(item => item.classList.toggle('active', item === button));
+        document.querySelectorAll('.view').forEach(item => item.classList.toggle('active', item.id === `${view}-view`));
+        document.getElementById('breadcrumb').textContent = view === 'dashboard' ? 'Overview' : view === 'audit' ? 'Activity log' : 'Settings';
+        if (view === 'dashboard') loadDashboard();
+        if (view === 'audit') loadAudit();
+        if (view === 'settings') loadSettings();
+    }));
+    document.getElementById('client-search').addEventListener('input', renderClients);
+    document.getElementById('status-filter').addEventListener('change', renderClients);
+    document.getElementById('save-settings').addEventListener('click', saveSettings);
+    document.getElementById('google-sign-in').addEventListener('click', async () => {
+        try { await signInWithGoogle(); } catch (error) { showToast(error.message); }
+    });
+    document.getElementById('restricted-google-sign-in').addEventListener('click', async () => {
+        try {
+            if (authClient) await authClient.auth.signOut({ scope: 'local' });
+            await signInWithGoogle();
+        } catch (error) {
+            document.getElementById('access-error').textContent = error.message;
+        }
+    });
+    const importInput = document.getElementById('import-clients-file');
+    document.getElementById('import-clients-button').addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', async () => {
+        const file = importInput.files[0];
+        if (!file) return;
+        const button = document.getElementById('import-clients-button');
+        button.disabled = true;
+        try {
+            const form = new FormData();
+            form.append('file', file);
+            const response = await apiFetch('/api/clients/import', { method: 'POST', body: form });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.error || `Import failed (${response.status}).`);
+            showToast(`${result.importedCount} clients imported.`);
+            await loadDashboard();
+        } catch (error) {
+            showToast(error.message);
+        } finally {
+            importInput.value = '';
+            button.disabled = false;
+        }
+    });
+    const clientDialog = document.getElementById('client-dialog');
+    document.getElementById('add-client-button').addEventListener('click', () => {
+        document.getElementById('client-form-error').textContent = '';
+        clientDialog.showModal();
+    });
+    document.getElementById('close-client-dialog').addEventListener('click', () => clientDialog.close());
+    document.getElementById('cancel-client').addEventListener('click', () => clientDialog.close());
+    document.getElementById('client-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const formElement = event.currentTarget;
+        const button = document.getElementById('create-client');
+        const error = document.getElementById('client-form-error');
+        const form = new FormData(formElement);
+        const documentTitles = document.getElementById('new-document-titles').value.split(/\r?\n/).map(title => title.trim()).filter(Boolean);
+        button.disabled = true;
+        error.textContent = '';
+        try {
+            const result = await requestJson('/api/clients', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: form.get('name'),
+                    businessName: form.get('businessName'),
+                    email: form.get('email'),
+                    phone: form.get('phone'),
+                    gstin: form.get('gstin'),
+                    documentTitles
+                })
+            });
+            clientDialog.close();
+            formElement.reset();
+            showToast(`${result.client.businessName} added to your client list.`);
+            await loadDashboard();
+        } catch (err) {
+            error.textContent = err.message;
+        } finally {
+            button.disabled = false;
+        }
+    });
+    document.getElementById('reminder-button').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = 'Sending reminders…';
+        try {
+            const result = await requestJson('/api/send-reminders', { method: 'POST', body: '{}' });
+            const failed = (result.details || []).filter(detail => !detail.success).length;
+            showToast(failed ? `${result.dispatchedCount || 0} sent; ${failed} not sent. Check email or reminder settings.` : `${result.dispatchedCount || 0} reminder${result.dispatchedCount === 1 ? '' : 's'} sent.`);
+            loadAudit();
+        } catch (error) {
+            showToast(error.message);
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Send document reminders';
+        }
+    });
+    document.getElementById('client-table-body').addEventListener('click', async event => {
+        const copyButton = event.target.closest('[data-copy]');
+        if (copyButton) {
+            try {
+                await navigator.clipboard.writeText(new URL(copyButton.dataset.copy, window.location.origin).href);
+                showToast('Client portal link copied.');
+            } catch (error) {
+                showToast('Could not copy link. Open the portal and copy its address.');
+            }
+        }
+        const downloadButton = event.target.closest('[data-download-client]');
+        if (downloadButton) {
+            try {
+                const response = await apiFetch(`/api/clients/${encodeURIComponent(downloadButton.dataset.downloadClient)}/documents/${encodeURIComponent(downloadButton.dataset.downloadItem)}`);
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.error || 'Could not retrieve document.');
+                }
+                const blob = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = '';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            } catch (error) {
+                showToast(error.message);
+            }
+        }
+    });
+
+    document.getElementById('today-label').textContent = new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+    initializeAuth().then(authorized => { if (authorized) loadDashboard(); }).catch(() => {
+        showAccessRestricted('Unable to verify workspace access. Contact your administrator.');
+    });
+</script>
+</body>
+</html>

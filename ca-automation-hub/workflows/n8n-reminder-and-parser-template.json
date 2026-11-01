@@ -1,0 +1,41 @@
+{
+  "name": "CA Document Collection & Reminder Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reminders",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook (From Reminder Engine)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendWhatsApp",
+        "phoneNumber": "={{ $json.body.client.phone }}",
+        "message": "Dear {{ $json.body.client.name }}, please submit your pending documents: {{ $json.body.pendingDocuments.join(', ') }} for {{ $json.body.client.businessName }}."
+      },
+      "name": "Send WhatsApp Reminder",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook (From Reminder Engine)": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

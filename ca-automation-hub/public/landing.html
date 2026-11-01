@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#102b46">
+    <meta name="description" content="A calmer way for Indian CA firms to track client compliance, collect documents, and coordinate reminders.">
+    <title>Practice Desk — Client compliance, made clearer</title>
+    <style>
+        :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18334c;background:#fbfaf7;font-synthesis:none;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+        *{box-sizing:border-box}body{margin:0;min-width:320px}a{color:inherit;text-decoration:none}.wrap{width:min(1120px,calc(100% - 48px));margin:0 auto}
+        .nav{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e9e6de}.brand{display:flex;align-items:center;gap:11px}.mark{height:38px;width:38px;border-radius:12px;background:#c69c58;color:#17344e;display:grid;place-items:center;font-family:Georgia,serif;font-weight:800;font-size:18px}.brand strong{display:block;font-size:13px;letter-spacing:.01em}.brand small{display:block;color:#8996a1;font-size:8px;letter-spacing:.15em;margin-top:3px;font-weight:800}.nav-right{display:flex;align-items:center;gap:26px}.nav-link{color:#627589;font-size:11px;font-weight:650}.nav-link:hover{color:#163b5a}
+        .button{display:inline-flex;align-items:center;justify-content:center;border-radius:7px;padding:11px 16px;font-size:10px;font-weight:800;transition:transform .15s,background .15s}.button:hover{transform:translateY(-1px)}.button-primary{background:#173e5f;color:white;box-shadow:0 5px 14px #173e5f20}.button-primary:hover{background:#245574}.button-ghost{border:1px solid #d9e1e7;color:#37546b;background:#fff}
+        .hero{display:grid;grid-template-columns:1.02fr .98fr;align-items:center;gap:54px;padding:79px 0 77px}.kicker{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #e8dfcd;border-radius:20px;background:#f8f4eb;color:#8b6b35;text-transform:uppercase;letter-spacing:.13em;font-size:8px;font-weight:850}.kicker i{height:6px;width:6px;background:#c69c58;border-radius:50%}
+        h1,h2,h3,p{margin-top:0}.hero h1{max-width:570px;font-family:Georgia,"Times New Roman",serif;font-size:clamp(42px,5vw,63px);font-weight:500;letter-spacing:-.045em;line-height:1.06;color:#142e47;margin:18px 0 18px}.hero h1 em{color:#a47c3d;font-style:normal}.hero-copy{max-width:460px;color:#708191;font-size:13px;line-height:1.85}.hero-actions{display:flex;align-items:center;gap:12px;margin-top:25px}.hero-note{display:flex;gap:13px;margin-top:26px;color:#81909d;font-size:9px}.hero-note span{display:inline-flex;align-items:center;gap:6px}.check{color:#3a9572;font-weight:900}
+        .preview{position:relative;padding:25px;border:1px solid #e5e8e6;border-radius:16px;background:#fff;box-shadow:0 18px 60px #19354d0d}.preview:before{content:"";position:absolute;inset:14px -12px -12px 14px;border:1px solid #eadfc9;border-radius:16px;z-index:-1}.preview-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid #eff1f1}.preview-label{font-size:10px;font-weight:800;color:#27435b}.preview-date{font-size:8px;color:#96a1aa}.preview-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:17px 0}.mini-metric{padding:11px;background:#f8fafb;border-radius:8px}.mini-metric small{font-size:7px;color:#8a98a5;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.mini-metric strong{display:block;font-family:Georgia,serif;font-size:21px;margin-top:6px;color:#193750}.mini-metric:nth-child(2) strong{color:#318563}
+        .preview-table{width:100%;border-collapse:collapse}.preview-table th{text-align:left;padding:9px 5px;color:#98a3ab;text-transform:uppercase;letter-spacing:.08em;font-size:7px}.preview-table td{padding:11px 5px;border-top:1px solid #f0f2f2;font-size:8px;color:#586e80}.preview-table td:first-child{font-weight:750;color:#304b62}.tag{padding:4px 7px;border-radius:20px;background:#fbf2df;color:#9a7020;font-size:7px;font-weight:800;white-space:nowrap}.tag-green{background:#e8f5ef;color:#328261}.progress{height:4px;width:58px;background:#edf1f3;border-radius:4px}.progress i{display:block;height:100%;background:#55a480;border-radius:4px}
+        .trust{border-top:1px solid #e9e6de;border-bottom:1px solid #e9e6de;padding:21px 0}.trust-inner{display:flex;align-items:center;justify-content:space-between;gap:20px}.trust-label{font-size:8px;color:#9aa4ad;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.trust-item{font-family:Georgia,serif;font-size:13px;color:#66798a}.trust-item span{color:#b58a49;margin-right:7px}
+        .section{padding:84px 0}.section-heading{text-align:center;max-width:600px;margin:0 auto 38px}.section-heading .kicker{margin-bottom:13px}.section-heading h2{font-family:Georgia,serif;font-size:36px;font-weight:500;letter-spacing:-.03em;color:#18334c;margin:0 0 10px}.section-heading p{font-size:11px;line-height:1.8;color:#83919d}
+        .features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.feature{padding:23px 21px;background:white;border:1px solid #e9ecec;border-radius:11px}.feature-icon{height:37px;width:37px;border-radius:10px;background:#f3f6f5;color:#376582;display:grid;place-items:center;font-size:16px;margin-bottom:18px}.feature h3{font-size:12px;color:#25435d;margin:0 0 8px}.feature p{font-size:10px;line-height:1.75;color:#80909c;margin:0}
+        .how{background:#f2f4f2}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:25px}.step{position:relative;padding:20px 5px 10px}.step-num{font-family:Georgia,serif;font-size:33px;color:#bd985d}.step h3{font-size:12px;color:#27445d;margin:8px 0}.step p{max-width:270px;color:#81909c;font-size:10px;line-height:1.8}
+        .cta{padding:58px 48px;border-radius:15px;background:#153751;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:26px}.cta h2{max-width:560px;font-family:Georgia,serif;font-size:34px;font-weight:500;letter-spacing:-.03em;margin:0 0 9px}.cta p{font-size:10px;line-height:1.7;color:#bdcbd5;margin:0}.cta .button{background:#c69c58;color:#18334c;white-space:nowrap}.cta .button:hover{background:#d5ad6a}
+        footer{padding:26px 0;border-top:1px solid #e8e7e1;color:#929da5;font-size:9px}.footer-inner{display:flex;justify-content:space-between;gap:15px;align-items:center}.footer-brand{color:#425b70;font-weight:800}
+        @media(max-width:760px){.wrap{width:min(100% - 34px,600px)}.nav{height:65px}.nav-right{gap:12px}.nav-link,.nav-right>a.button-primary{display:none}.nav-right .button{padding:9px 11px;font-size:9px}.hero{grid-template-columns:1fr;gap:38px;padding:55px 0 56px}.hero h1{font-size:46px}.preview{max-width:520px;margin:0 auto;width:100%}.trust-inner{justify-content:center;flex-wrap:wrap}.trust-label{width:100%;text-align:center}.trust-item{font-size:11px}.section{padding:62px 0}.section-heading h2{font-size:30px}.features{grid-template-columns:1fr}.feature{padding:19px}.steps{grid-template-columns:1fr;gap:8px}.step{padding:8px 0}.cta{padding:33px 25px;align-items:flex-start;flex-direction:column}.cta h2{font-size:29px}.footer-inner{align-items:flex-start;flex-direction:column}}
+        @media(max-width:390px){.hero-actions{align-items:stretch;flex-direction:column}.hero-actions .button{width:100%}.preview{padding:16px}.preview-table td{font-size:7px}.mini-metric strong{font-size:18px}}
+    </style>
+</head>
+<body>
+    <header class="wrap nav">
+        <a class="brand" href="/landing.html" aria-label="Practice Desk home"><span class="mark">CA</span><span><strong>Practice Desk</strong><small>CLIENT COMPLIANCE</small></span></a>
+        <div class="nav-right"><a class="nav-link" href="#features">Platform</a><a class="nav-link" href="#how-it-works">How it works</a><button class="button button-ghost" id="google-sign-in">Sign in with Google</button><a class="button button-primary" href="/">Open Practice Desk</a></div>
+    </header>
+    <main>
+        <section class="wrap hero">
+            <div>
+                <span class="kicker"><i></i> Made for modern CA practices</span>
+                <h1>Less chasing.<br><em>More clarity.</em></h1>
+                <p class="hero-copy">A simpler way for Indian CA firms to keep client documents moving. Track every request, give clients one easy upload link, and keep your team ahead of compliance deadlines.</p>
+                <div class="hero-actions"><a class="button button-primary" href="/">Book a Demo / Get Started &nbsp;→</a><a class="button button-ghost" href="#features">Explore the platform</a></div>
+                <div class="hero-note"><span><b class="check">✓</b> Built for CA workflows</span><span><b class="check">✓</b> Mobile-friendly uploads</span></div>
+            </div>
+            <div class="preview" aria-label="Illustration of the client compliance dashboard">
+                <div class="preview-top"><div class="preview-label">Client compliance overview</div><div class="preview-date">PRACTICE DASHBOARD</div></div>
+                <div class="preview-metrics"><div class="mini-metric"><small>Total clients</small><strong>128</strong></div><div class="mini-metric"><small>Documents complete</small><strong>94</strong></div><div class="mini-metric"><small>Need attention</small><strong>34</strong></div></div>
+                <table class="preview-table"><thead><tr><th>Client</th><th>Collection</th><th>Status</th></tr></thead><tbody>
+                    <tr><td>Mehta Textiles</td><td><div class="progress"><i style="width:80%"></i></div></td><td><span class="tag">In progress</span></td></tr>
+                    <tr><td>Kapoor Trading Co.</td><td><div class="progress"><i style="width:100%"></i></div></td><td><span class="tag tag-green">Complete</span></td></tr>
+                    <tr><td>Shah & Sons</td><td><div class="progress"><i style="width:35%"></i></div></td><td><span class="tag">Pending</span></td></tr>
+                </tbody></table>
+            </div>
+        </section>
+        <section class="trust"><div class="wrap trust-inner"><div class="trust-label">One workspace for the everyday work</div><div class="trust-item"><span>01</span>GST compliance</div><div class="trust-item"><span>02</span>Client document collection</div><div class="trust-item"><span>03</span>Deadline visibility</div></div></section>
+        <section class="wrap section" id="features">
+            <div class="section-heading"><span class="kicker"><i></i> Built around your workflow</span><h2>Your client follow-up, finally in order.</h2><p>Keep requests, submissions, and next steps visible—without relying on scattered chats and spreadsheets.</p></div>
+            <div class="features">
+                <article class="feature"><div class="feature-icon">▦</div><h3>Compliance at a glance</h3><p>See client readiness, outstanding documents, and upcoming statutory due dates in a focused practice dashboard.</p></article>
+                <article class="feature"><div class="feature-icon">↥</div><h3>One-click mobile uploads</h3><p>Share a client-specific portal link. Clients can upload requested PDFs and photos from their phone without creating an account.</p></article>
+                <article class="feature"><div class="feature-icon">◷</div><h3>WhatsApp-ready reminders</h3><p>Connect a reminder workflow through n8n to send timely follow-ups and put the right upload link in reach.</p></article>
+            </div>
+        </section>
+        <section class="how" id="how-it-works">
+            <div class="wrap section">
+                <div class="section-heading"><span class="kicker"><i></i> Simple for your team and clients</span><h2>From request to received.</h2><p>A clear collection flow that keeps your team and clients on the same page.</p></div>
+                <div class="steps">
+                    <article class="step"><div class="step-num">01</div><h3>Create a checklist</h3><p>Choose the documents needed for a client and keep the request organized in one place.</p></article>
+                    <article class="step"><div class="step-num">02</div><h3>Share their upload link</h3><p>Send a mobile-friendly portal link so clients know exactly what to provide and where it goes.</p></article>
+                    <article class="step"><div class="step-num">03</div><h3>Review with confidence</h3><p>Track what has arrived, retrieve uploaded files, and follow up on outstanding requirements.</p></article>
+                </div>
+            </div>
+        </section>
+        <section class="wrap section">
+            <div class="cta"><div><h2>Make client follow-ups feel more professional.</h2><p>See how Practice Desk can fit into your firm's document collection workflow.</p></div><a class="button" href="/">Book a Demo / Get Started &nbsp;→</a></div>
+        </section>
+    </main>
+    <footer><div class="wrap footer-inner"><div class="footer-brand">CA Practice Desk</div><div>Designed to bring a little more clarity to every filing season.</div><a href="/">Open the workspace →</a></div></footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.getElementById('google-sign-in').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/config');
+                const config = await response.json();
+                if (!config.supabaseUrl || !config.supabaseAnonKey || !window.supabase?.createClient) {
+                    throw new Error('Google sign-in is unavailable. Configure Supabase URL and anon key first.');
+                }
+                const client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+                const { error } = await client.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: `${window.location.origin}/` }
+                });
+                if (error) throw error;
+            } catch (error) {
+                window.alert(error.message);
+            }
+        });
+    </script>
+</body>
+</html>
